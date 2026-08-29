@@ -27,7 +27,7 @@
           <p class="text-xs text-slate-400 mt-0.5">點擊單字集進入學習與複習</p>
         </div>
         
-        <!-- 操作按鈕群 (備份/還原/新增) -->
+        <!-- 操作按鈕群 -->
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
           <button onclick="exportBackup()" title="匯出所有單字備份檔案" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
             <span>📥 備份</span>
@@ -155,11 +155,11 @@
                   <span>不熟 (重來)</span>
                 </button>
                 <button onclick="rateCard('medium')" class="py-2.5 bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600 text-amber-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
-                  <span class="text-base">▲</span>
+                  <span class="text-base">△</span>
                   <span>模糊 (再練)</span>
                 </button>
                 <button onclick="rateCard('easy')" class="py-2.5 bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
-                  <span class="text-base">⭕</span>
+                  <span class="text-base">○</span>
                   <span>熟練 (掌握)</span>
                 </button>
               </div>
@@ -210,7 +210,7 @@
   <!-- 彈窗 2: 編輯單個單字 -->
   <div id="edit-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-      <h3 class="text-lg font-bold mb-4">✏️ 編輯單字卡</h3>
+      <h3 class="text-lg font-bold mb-4">編輯單字卡</h3>
       <input type="hidden" id="edit-card-id">
       <div class="space-y-3 mb-5">
         <div>
@@ -318,7 +318,7 @@
         <button onclick="startReview('QUICK')" class="w-full p-3.5 border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-2xl flex items-center justify-between transition group">
           <div class="text-left">
             <p class="font-bold text-slate-800 group-hover:text-amber-600 text-sm">⚡ 快速複習 (免打字)</p>
-            <p class="text-xs text-slate-400 mt-0.5">直接翻面核對，點 ⭕ / ▲ / ✕</p>
+            <p class="text-xs text-slate-400 mt-0.5">直接翻面核對，點 ○ / △ / ✕</p>
           </div>
           <span class="text-xl">⚡</span>
         </button>
@@ -365,9 +365,9 @@
       </div>
 
       <div class="flex justify-between items-center text-xs bg-slate-50 p-3 rounded-xl mb-6 text-slate-600">
-        <span>⭕ 圈圈: <b id="stat-easy-count" class="text-emerald-600">0</b></span>
-        <span>▲ 三角: <b id="stat-med-count" class="text-amber-600">0</b></span>
-        <span>✕ 叉叉: <b id="stat-hard-count" class="text-rose-600">0</b></span>
+        <span>○ 熟練: <b id="stat-easy-count" class="text-emerald-600">0</b></span>
+        <span>△ 模糊: <b id="stat-med-count" class="text-amber-600">0</b></span>
+        <span>✕ 不熟: <b id="stat-hard-count" class="text-rose-600">0</b></span>
       </div>
 
       <button onclick="finishReviewSession()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow transition">
@@ -523,7 +523,7 @@
               <div class="flex items-center gap-1">
                 ${isDue 
                   ? `<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">待複習</span>`
-                  : `<span class="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">已穩固</span>`
+                  : `<span class="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">已複習</span>`
                 }
                 <button onclick="openDeckMenu(event, '${deck.id}')" class="text-slate-400 hover:text-slate-800 hover:bg-slate-100 p-1 rounded-lg text-sm font-black transition">
                   •••
@@ -643,7 +643,7 @@
             <p class="font-bold text-sm">🎉 記憶狀態良好</p>
             <p class="text-xs text-emerald-700 mt-0.5">預計於 <b>${nextDate}</b>（${diffDays} 天後）進行下次複習</p>
           </div>
-          <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">已穩固</span>
+          <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">已複習</span>
         `;
       }
     }
@@ -684,18 +684,18 @@
         const wrapper = document.createElement("div");
         wrapper.className = "relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
 
-        let statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-slate-200 text-slate-500">🆕 新詞</span>`;
-        if (c.status === "hard") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-600">✕ 不熟</span>`;
-        if (c.status === "medium") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-600">▲ 模糊</span>`;
-        if (c.status === "easy") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-600">⭕ 熟練</span>`;
+        let statusBadge = "";
+        if (c.status === "hard") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-600">✕</span>`;
+        if (c.status === "medium") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-600">△</span>`;
+        if (c.status === "easy") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-600">○</span>`;
 
         wrapper.innerHTML = `
           <div class="absolute inset-y-0 right-0 flex items-stretch">
-            <button onclick="openEditCardModal('${c.id}')" class="px-4 bg-amber-500 text-white text-xs font-bold flex items-center gap-1 hover:bg-amber-600 transition">
-              ✏️ 編輯
+            <button onclick="openEditCardModal('${c.id}')" class="px-4 bg-amber-500 text-white text-xs font-bold flex items-center justify-center hover:bg-amber-600 transition">
+              編輯
             </button>
-            <button onclick="deleteCard('${c.id}')" class="px-4 bg-rose-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-rose-700 transition">
-              🗑️ 刪除
+            <button onclick="deleteCard('${c.id}')" class="px-4 bg-rose-600 text-white text-xs font-bold flex items-center justify-center hover:bg-rose-700 transition">
+              刪除
             </button>
           </div>
 
