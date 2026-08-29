@@ -74,12 +74,12 @@
         <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
           <span class="text-xs font-bold text-slate-400 ml-1">排序：</span>
           <select id="sort-select" onchange="renderCardList()" class="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="weak_first">🔥 不熟練優先</option>
-            <option value="alpha">🔤 字母 A-Z</option>
-            <option value="time">🕒 新增時間</option>
+            <option value="weak_first">不熟練優先</option>
+            <option value="alpha">字母 A-Z</option>
+            <option value="time">新增時間</option>
           </select>
-          <button id="sort-order-btn" onclick="toggleSortOrder()" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 transition flex items-center gap-1 px-2">
-            <span id="sort-order-icon">↓ 正向</span>
+          <button id="sort-order-btn" onclick="toggleSortOrder()" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 transition flex items-center justify-center px-2.5">
+            <span id="sort-order-icon">↓</span>
           </button>
         </div>
       </div>
@@ -311,32 +311,19 @@
   <!-- 彈窗 6: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
-      <h3 class="text-lg font-bold text-slate-800 mb-1">選擇複習模式</h3>
-      <p class="text-xs text-slate-400 mb-5">依據今日學習目標選擇進行方式</p>
+      <h3 class="text-lg font-bold text-slate-800 mb-4">選擇複習模式</h3>
       
       <div class="space-y-2.5">
-        <button onclick="startReview('QUICK')" class="w-full p-3.5 border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-2xl flex items-center justify-between transition group">
-          <div class="text-left">
-            <p class="font-bold text-slate-800 group-hover:text-amber-600 text-sm">⚡ 快速複習 (免打字)</p>
-            <p class="text-xs text-slate-400 mt-0.5">直接翻面核對，點 ○ / △ / ✕</p>
-          </div>
-          <span class="text-xl">⚡</span>
+        <button onclick="startReview('QUICK')" class="w-full p-4 border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-base">⚡單字卡</p>
         </button>
 
-        <button onclick="startReview('EN_TO_ZH')" class="w-full p-3.5 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex items-center justify-between transition group">
-          <div class="text-left">
-            <p class="font-bold text-slate-800 group-hover:text-blue-600 text-sm">🔤 先顯示 英文單字</p>
-            <p class="text-xs text-slate-400 mt-0.5">輸入中文釋義，測試理解</p>
-          </div>
-          <span class="text-xl">📖</span>
+        <button onclick="startReview('EN_TO_ZH')" class="w-full p-4 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-base">📖中文</p>
         </button>
 
-        <button onclick="startReview('ZH_TO_EN')" class="w-full p-3.5 border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 rounded-2xl flex items-center justify-between transition group">
-          <div class="text-left">
-            <p class="font-bold text-slate-800 group-hover:text-indigo-600 text-sm">🇹🇼 先顯示 中文釋義</p>
-            <p class="text-xs text-slate-400 mt-0.5">輸入英文單字，強化拼寫</p>
-          </div>
-          <span class="text-xl">✍️</span>
+        <button onclick="startReview('ZH_TO_EN')" class="w-full p-4 border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-base">📖英文</p>
         </button>
       </div>
 
@@ -650,7 +637,7 @@
 
     function toggleSortOrder() {
       sortAscending = !sortAscending;
-      document.getElementById("sort-order-icon").innerText = sortAscending ? "↓ 正向" : "↑ 倒序";
+      document.getElementById("sort-order-icon").innerText = sortAscending ? "↓" : "↑";
       renderCardList();
     }
 
@@ -934,11 +921,11 @@
       if (mode === "QUICK") {
         inputContainer.classList.add("hidden");
         flipHint.innerText = "點擊卡片或按空白鍵翻面 ➔";
-        modeBadge.innerText = "⚡ 快速複習模式";
+        modeBadge.innerText = "⚡單字卡";
       } else {
         inputContainer.classList.remove("hidden");
         flipHint.innerText = "輸入答案按 Enter 翻面 ➔";
-        modeBadge.innerText = mode === "EN_TO_ZH" ? "🔤 先顯示 英文單字" : "✍️ 先顯示 中文釋義";
+        modeBadge.innerText = mode === "EN_TO_ZH" ? "📖中文" : "📖英文";
       }
 
       renderNextReviewCard();
@@ -1030,7 +1017,6 @@
         session.queue.splice(insertIdx, 0, currentItem);
       } else if (rating === "easy") {
         session.stats.easy += 1;
-        // ○ 熟練：直接掌握並移出隊列，不再重複
         session.stats.masteredWords.add(card.word);
       }
 
