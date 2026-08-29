@@ -685,9 +685,9 @@
         wrapper.className = "relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
 
         let statusBadge = "";
-        if (c.status === "hard") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-600">✕</span>`;
-        if (c.status === "medium") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-600">△</span>`;
-        if (c.status === "easy") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-600">○</span>`;
+        if (c.status === "hard") statusBadge = `<span class="text-sm font-bold text-rose-500">✕</span>`;
+        if (c.status === "medium") statusBadge = `<span class="text-sm font-bold text-amber-500">△</span>`;
+        if (c.status === "easy") statusBadge = `<span class="text-sm font-bold text-emerald-500">○</span>`;
 
         wrapper.innerHTML = `
           <div class="absolute inset-y-0 right-0 flex items-stretch">
