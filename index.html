@@ -921,7 +921,7 @@
       }
       if (!sortAscending) reviewCards.reverse();
 
-      session.queue = reviewCards.map(c => ({ card: c, easyCount: 0 }));
+      session.queue = reviewCards.map(c => ({ card: c }));
       session.stats = { totalAnswered: 0, easy: 0, medium: 0, hard: 0, masteredWords: new Set() };
 
       document.getElementById("view-deck-detail").classList.add("hidden");
@@ -1022,22 +1022,16 @@
 
       if (rating === "hard") {
         session.stats.hard += 1;
-        currentItem.easyCount = 0;
         const insertIdx = Math.min(2, session.queue.length);
         session.queue.splice(insertIdx, 0, currentItem);
       } else if (rating === "medium") {
         session.stats.medium += 1;
-        currentItem.easyCount = 0;
         const insertIdx = Math.min(4, session.queue.length);
         session.queue.splice(insertIdx, 0, currentItem);
       } else if (rating === "easy") {
         session.stats.easy += 1;
-        currentItem.easyCount += 1;
-        if (currentItem.easyCount < 2 && session.queue.length > 0) {
-          session.queue.push(currentItem);
-        } else {
-          session.stats.masteredWords.add(card.word);
-        }
+        // ○ 熟練：直接掌握並移出隊列，不再重複
+        session.stats.masteredWords.add(card.word);
       }
 
       saveData();
