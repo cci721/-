@@ -463,15 +463,46 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
     }
 
-    function exportBackup() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-      const downloadAnchor = document.createElement("a");
-      const dateStr = new Date().toISOString().split("T")[0];
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `vocab_backup_${dateStr}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+    async function exportBackup() {
+      try {
+        const dataStr = JSON.stringify(appData, null, 2);
+        const dateStr = new Date().toISOString().split("T")[0];
+        const fileName = `vocab_backup_${dateStr}.json`;
+        const blob = new Blob([dataStr], { type: "application/json" });
+
+        // 1. 優先使用 iOS 原生分享面板 (iPhone Safari 最佳解)
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: "application/json" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "單字庫備份檔案",
+              text: `背單字 App 備份 (${dateStr})`
+            });
+            return;
+          }
+        }
+
+        // 2. 一般瀏覽器下載流程
+        const url = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.href = url;
+        downloadAnchor.download = fileName;
+        downloadAnchor.rel = "noopener";
+        downloadAnchor.target = "_blank";
+        
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(downloadAnchor);
+          URL.revokeObjectURL(url);
+        }, 1000);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          alert("備份失敗，請稍後再試。");
+        }
+      }
     }
 
     function importBackup(event) {
