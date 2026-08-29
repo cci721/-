@@ -27,7 +27,6 @@
           <p class="text-xs text-slate-400 mt-0.5">點擊單字集進入學習與複習</p>
         </div>
         
-        <!-- 操作按鈕群 -->
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
           <button onclick="exportBackup()" title="匯出所有單字備份檔案" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
             <span>📥 備份</span>
@@ -91,7 +90,6 @@
         <p class="text-xs mt-1">點擊右上角「+ 新增單字」立即擴充！</p>
       </div>
 
-      <!-- 浮動複習按鈕 -->
       <div class="fixed bottom-6 right-6 md:right-12 z-40">
         <button onclick="openReviewModeModal()" id="fab-review-btn" class="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-full shadow-2xl hover:shadow-blue-500/50 transition transform hover:-translate-y-1 active:scale-95 text-sm md:text-base border-2 border-white/20">
           <span>🚀 開始複習</span>
@@ -112,21 +110,42 @@
         </button>
       </div>
 
-      <div class="w-full min-h-[320px] perspective mb-5 cursor-pointer" onclick="handleCardClick()">
+      <!-- 配對連連看模式容器 -->
+      <div id="match-game-container" class="hidden">
+        <div class="text-center mb-4">
+          <p class="text-xs font-bold text-slate-500">點選左側英文與右側中文進行配對消除</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3" id="match-grid"></div>
+      </div>
+
+      <!-- 卡片複習主容器 -->
+      <div id="standard-review-container" class="w-full min-h-[320px] perspective mb-5 cursor-pointer" onclick="handleCardClick()">
         <div id="review-card" class="relative w-full h-full duration-500 transform-style-3d shadow-md rounded-2xl min-h-[320px]">
+          <!-- 正面 -->
           <div class="absolute w-full h-full bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden border-2 border-slate-100">
             <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
             
             <div class="my-auto text-center w-full">
+              <!-- 聽力播放按鈕 (聽力模式) -->
+              <div id="listen-play-btn-box" class="hidden mb-3">
+                <button onclick="speakAnswerWord(); event.stopPropagation();" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md text-sm transition">
+                  🔊 點擊播放發音
+                </button>
+              </div>
+
               <h2 id="review-question" class="text-3xl font-black text-slate-800 tracking-wide mb-1"></h2>
               <span id="review-pos-badge" class="text-xs font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full inline-block mb-3"></span>
               <p id="review-phonetic-hint" class="text-slate-400 text-sm mb-4"></p>
 
+              <!-- 輸入框 (填寫/拼寫/聽力模式) -->
               <div id="review-input-container" class="w-full max-w-sm mx-auto mb-2" onclick="event.stopPropagation()">
-                <input id="user-answer-input" type="text" placeholder="在此輸入你的答案 (選填，按 Enter 翻牌)..." 
+                <input id="user-answer-input" type="text" placeholder="在此輸入你的答案 (按 Enter 翻牌)..." 
                   class="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-center text-base font-medium outline-none focus:border-blue-500 transition"
                   onkeydown="handleAnswerKey(event)">
               </div>
+
+              <!-- 四選一選擇題按鈕群 -->
+              <div id="review-choices-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md mx-auto my-2" onclick="event.stopPropagation()"></div>
             </div>
 
             <div class="text-xs text-slate-400 font-medium">
@@ -134,6 +153,7 @@
             </div>
           </div>
 
+          <!-- 背面 -->
           <div class="absolute w-full h-full bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden rotate-y-180" onclick="event.stopPropagation()">
             <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">ANSWER</span>
             
@@ -313,17 +333,29 @@
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <h3 class="text-lg font-bold text-slate-800 mb-4">選擇複習模式</h3>
       
-      <div class="space-y-2.5">
-        <button onclick="startReview('QUICK')" class="w-full p-4 border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-2xl flex items-center justify-center transition">
-          <p class="font-black text-slate-800 text-base">⚡單字卡</p>
+      <div class="space-y-2">
+        <button onclick="startReview('FLASH_CARD')" class="w-full p-3 border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">⚡單字卡</p>
         </button>
 
-        <button onclick="startReview('EN_TO_ZH')" class="w-full p-4 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex items-center justify-center transition">
-          <p class="font-black text-slate-800 text-base">📖中文</p>
+        <button onclick="startReview('CHOICE')" class="w-full p-3 border-2 border-slate-200 hover:border-sky-500 hover:bg-sky-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">📖字義選擇</p>
         </button>
 
-        <button onclick="startReview('ZH_TO_EN')" class="w-full p-4 border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 rounded-2xl flex items-center justify-center transition">
-          <p class="font-black text-slate-800 text-base">📖英文</p>
+        <button onclick="startReview('EN_TO_ZH')" class="w-full p-3 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">📖字義填寫</p>
+        </button>
+
+        <button onclick="startReview('ZH_TO_EN')" class="w-full p-3 border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">📖英文拼寫</p>
+        </button>
+
+        <button onclick="startReview('LISTEN_SPELL')" class="w-full p-3 border-2 border-slate-200 hover:border-purple-500 hover:bg-purple-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">📖聽力拼寫</p>
+        </button>
+
+        <button onclick="startReview('MATCHING')" class="w-full p-3 border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 rounded-2xl flex items-center justify-center transition">
+          <p class="font-black text-slate-800 text-sm">📖單字配對</p>
         </button>
       </div>
 
@@ -351,7 +383,7 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center text-xs bg-slate-50 p-3 rounded-xl mb-6 text-slate-600">
+      <div id="stat-badges-row" class="flex justify-between items-center text-xs bg-slate-50 p-3 rounded-xl mb-6 text-slate-600">
         <span>○ 熟練: <b id="stat-easy-count" class="text-emerald-600">0</b></span>
         <span>△ 模糊: <b id="stat-med-count" class="text-amber-600">0</b></span>
         <span>✕ 不熟: <b id="stat-hard-count" class="text-rose-600">0</b></span>
@@ -393,12 +425,14 @@
     let sortAscending = true;
 
     let session = {
-      mode: "QUICK",
+      mode: "FLASH_CARD",
       queue: [],
       stats: { totalAnswered: 0, easy: 0, medium: 0, hard: 0, masteredWords: new Set() }
     };
 
     let isCardFlipped = false;
+    let matchSelected = null;
+    let matchRemaining = 0;
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -914,21 +948,52 @@
       document.getElementById("view-deck-detail").classList.add("hidden");
       document.getElementById("view-review").classList.remove("hidden");
 
+      const standardBox = document.getElementById("standard-review-container");
+      const matchBox = document.getElementById("match-game-container");
       const inputContainer = document.getElementById("review-input-container");
+      const choicesContainer = document.getElementById("review-choices-container");
+      const listenBtnBox = document.getElementById("listen-play-btn-box");
       const flipHint = document.getElementById("flip-hint-text");
       const modeBadge = document.getElementById("review-mode-title-badge");
 
-      if (mode === "QUICK") {
-        inputContainer.classList.add("hidden");
+      // 重設區塊顯示
+      standardBox.classList.remove("hidden");
+      matchBox.classList.add("hidden");
+      inputContainer.classList.add("hidden");
+      choicesContainer.classList.add("hidden");
+      listenBtnBox.classList.add("hidden");
+
+      if (mode === "FLASH_CARD") {
         flipHint.innerText = "點擊卡片或按空白鍵翻面 ➔";
         modeBadge.innerText = "⚡單字卡";
-      } else {
+        renderNextReviewCard();
+      } else if (mode === "CHOICE") {
+        choicesContainer.classList.remove("hidden");
+        flipHint.innerText = "點選正確的中文釋義 ➔";
+        modeBadge.innerText = "📖字義選擇";
+        renderNextReviewCard();
+      } else if (mode === "EN_TO_ZH") {
         inputContainer.classList.remove("hidden");
-        flipHint.innerText = "輸入答案按 Enter 翻面 ➔";
-        modeBadge.innerText = mode === "EN_TO_ZH" ? "📖中文" : "📖英文";
+        flipHint.innerText = "輸入中文釋義按 Enter 翻面 ➔";
+        modeBadge.innerText = "📖字義填寫";
+        renderNextReviewCard();
+      } else if (mode === "ZH_TO_EN") {
+        inputContainer.classList.remove("hidden");
+        flipHint.innerText = "輸入英文單字按 Enter 翻面 ➔";
+        modeBadge.innerText = "📖英文拼寫";
+        renderNextReviewCard();
+      } else if (mode === "LISTEN_SPELL") {
+        inputContainer.classList.remove("hidden");
+        listenBtnBox.classList.remove("hidden");
+        flipHint.innerText = "聽發音後輸入拼寫按 Enter 翻面 ➔";
+        modeBadge.innerText = "📖聽力拼寫";
+        renderNextReviewCard();
+      } else if (mode === "MATCHING") {
+        standardBox.classList.add("hidden");
+        matchBox.classList.remove("hidden");
+        modeBadge.innerText = "📖單字配對";
+        initMatchingGame();
       }
-
-      renderNextReviewCard();
     }
 
     function renderNextReviewCard() {
@@ -947,6 +1012,16 @@
         document.getElementById("review-prompt-type").innerText = "中文 ➔ 請拼寫英文";
         document.getElementById("review-question").innerText = card.def;
         document.getElementById("review-phonetic-hint").innerText = card.phonetic ? `音標提示: ${card.phonetic}` : "";
+      } else if (session.mode === "LISTEN_SPELL") {
+        document.getElementById("review-prompt-type").innerText = "聽發音 ➔ 請拼寫英文";
+        document.getElementById("review-question").innerText = "🎧 請聽發音";
+        document.getElementById("review-phonetic-hint").innerText = card.phonetic ? `音標提示: ${card.phonetic}` : "";
+        speakAnswerWord();
+      } else if (session.mode === "CHOICE") {
+        document.getElementById("review-prompt-type").innerText = "選擇題 ➔ 請選出正確字義";
+        document.getElementById("review-question").innerText = card.word;
+        document.getElementById("review-phonetic-hint").innerText = card.phonetic || "";
+        renderChoiceButtons(card);
       } else {
         document.getElementById("review-prompt-type").innerText = "英文 ➔ 請回想中文";
         document.getElementById("review-question").innerText = card.word;
@@ -955,7 +1030,9 @@
 
       const input = document.getElementById("user-answer-input");
       input.value = "";
-      if (session.mode !== "QUICK") setTimeout(() => input.focus(), 100);
+      if (["EN_TO_ZH", "ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
+        setTimeout(() => input.focus(), 100);
+      }
 
       document.getElementById("review-answer-main").innerText = card.word;
       document.getElementById("review-answer-pos").innerText = card.pos || "n.";
@@ -965,15 +1042,114 @@
       document.getElementById("review-card").classList.remove("rotate-y-180");
     }
 
+    function renderChoiceButtons(correctCard) {
+      const container = document.getElementById("review-choices-container");
+      container.innerHTML = "";
+      const deck = appData.decks[currentDeckId];
+
+      const otherCards = deck.cards.filter(c => c.id !== correctCard.id);
+      const shuffledOthers = otherCards.sort(() => 0.5 - Math.random()).slice(0, 3);
+      const options = [correctCard, ...shuffledOthers].sort(() => 0.5 - Math.random());
+
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "w-full p-3 bg-white border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 rounded-xl text-xs font-bold text-slate-700 transition text-left";
+        btn.innerText = `${opt.pos || 'n.'} ${opt.def}`;
+        btn.onclick = () => selectChoice(opt.id === correctCard.id);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectChoice(isCorrect) {
+      revealCard(isCorrect);
+    }
+
+    // ================= 單字配對遊戲 =================
+    function initMatchingGame() {
+      const deck = appData.decks[currentDeckId];
+      const grid = document.getElementById("match-grid");
+      grid.innerHTML = "";
+      matchSelected = null;
+
+      const gameCards = [...deck.cards].sort(() => 0.5 - Math.random()).slice(0, 6);
+      matchRemaining = gameCards.length;
+      document.getElementById("review-queue-count").innerText = `剩餘配對: ${matchRemaining} 組`;
+
+      let tiles = [];
+      gameCards.forEach(c => {
+        tiles.push({ id: c.id, text: c.word, type: "EN" });
+        tiles.push({ id: c.id, text: `${c.pos || 'n.'} ${c.def}`, type: "ZH" });
+      });
+
+      tiles.sort(() => 0.5 - Math.random());
+
+      tiles.forEach((t, idx) => {
+        const btn = document.createElement("button");
+        btn.id = `match-tile-${idx}`;
+        btn.className = "p-4 bg-slate-50 border-2 border-slate-200 hover:border-blue-400 rounded-2xl text-xs font-bold text-slate-800 transition min-h-[64px] flex items-center justify-center text-center";
+        btn.innerText = t.text;
+        btn.onclick = () => handleMatchTileClick(btn, t);
+        grid.appendChild(btn);
+      });
+    }
+
+    function handleMatchTileClick(btn, tile) {
+      if (btn.classList.contains("opacity-0") || btn.classList.contains("pointer-events-none")) return;
+
+      if (!matchSelected) {
+        matchSelected = { btn, tile };
+        btn.classList.add("border-blue-500", "bg-blue-50");
+      } else {
+        if (matchSelected.btn === btn) {
+          btn.classList.remove("border-blue-500", "bg-blue-50");
+          matchSelected = null;
+          return;
+        }
+
+        const prev = matchSelected;
+        session.stats.totalAnswered += 1;
+
+        if (prev.tile.id === tile.id && prev.tile.type !== tile.type) {
+          prev.btn.className = "p-4 bg-emerald-100 border-2 border-emerald-500 rounded-2xl text-xs font-bold text-emerald-700 pointer-events-none min-h-[64px] flex items-center justify-center";
+          btn.className = "p-4 bg-emerald-100 border-2 border-emerald-500 rounded-2xl text-xs font-bold text-emerald-700 pointer-events-none min-h-[64px] flex items-center justify-center";
+          
+          setTimeout(() => {
+            prev.btn.classList.add("opacity-0");
+            btn.classList.add("opacity-0");
+          }, 350);
+
+          session.stats.easy += 1;
+          session.stats.masteredWords.add(tile.text);
+          matchRemaining--;
+          document.getElementById("review-queue-count").innerText = `剩餘配對: ${matchRemaining} 組`;
+
+          if (matchRemaining === 0) {
+            setTimeout(showSummaryModal, 600);
+          }
+        } else {
+          prev.btn.classList.add("border-rose-500", "bg-rose-50");
+          btn.classList.add("border-rose-500", "bg-rose-50");
+          session.stats.hard += 1;
+
+          setTimeout(() => {
+            prev.btn.classList.remove("border-rose-500", "bg-rose-50", "border-blue-500", "bg-blue-50");
+            btn.classList.remove("border-rose-500", "bg-rose-50");
+          }, 450);
+        }
+
+        matchSelected = null;
+      }
+    }
+
     function handleCardClick() {
-      if (!isCardFlipped) revealCard();
+      if (!isCardFlipped && session.mode !== "MATCHING" && session.mode !== "CHOICE") revealCard();
     }
 
     function handleAnswerKey(e) {
       if (e.key === "Enter") revealCard();
     }
 
-    function revealCard() {
+    function revealCard(choiceCorrect = null) {
       if (isCardFlipped) return;
       isCardFlipped = true;
 
@@ -981,7 +1157,16 @@
       const card = currentItem.card;
       const compBox = document.getElementById("user-answer-comparison");
 
-      if (session.mode !== "QUICK") {
+      if (session.mode === "CHOICE") {
+        compBox.classList.remove("hidden");
+        if (choiceCorrect) {
+          compBox.className = "mb-3 text-xs px-3 py-1 rounded-lg inline-block font-semibold bg-emerald-500/20 text-emerald-300";
+          compBox.innerText = "✓ 選擇正確！";
+        } else {
+          compBox.className = "mb-3 text-xs px-3 py-1 rounded-lg inline-block font-semibold bg-rose-500/20 text-rose-300";
+          compBox.innerText = "✕ 答錯了，請記住正確解答！";
+        }
+      } else if (["EN_TO_ZH", "ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
         const userAns = document.getElementById("user-answer-input").value.trim();
         if (userAns) {
           compBox.classList.remove("hidden");
@@ -1123,8 +1308,9 @@
 
     window.addEventListener("keydown", (e) => {
       if (!document.getElementById("view-review").classList.contains("hidden") &&
-          document.getElementById("summary-modal").classList.contains("hidden")) {
-        if (e.code === "Space" && !isCardFlipped) {
+          document.getElementById("summary-modal").classList.contains("hidden") &&
+          session.mode !== "MATCHING") {
+        if (e.code === "Space" && !isCardFlipped && session.mode !== "CHOICE") {
           e.preventDefault();
           revealCard();
         } else if (isCardFlipped) {
