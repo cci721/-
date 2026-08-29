@@ -126,8 +126,9 @@
             
             <div class="my-auto text-center w-full">
               <div id="listen-play-btn-box" class="hidden mb-3">
-                <button onclick="speakAnswerWord(); event.stopPropagation();" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md text-sm transition">
-                  🔊 點擊播放發音
+                <button onclick="speakAnswerWord(); event.stopPropagation();" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md text-sm transition flex items-center justify-center gap-2 mx-auto">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                  <span>點擊播放發音</span>
                 </button>
               </div>
 
@@ -161,7 +162,10 @@
               </div>
               <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
               <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
-              <button onclick="speakAnswerWord()" class="mt-2 text-xs bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 rounded-full text-blue-300 font-medium transition">🔊 聽發音</button>
+              <button onclick="speakAnswerWord()" class="mt-2 text-xs bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 rounded-full text-blue-300 font-medium transition flex items-center justify-center gap-1.5 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <span>聽發音</span>
+              </button>
             </div>
 
             <div class="w-full">
@@ -190,7 +194,7 @@
 
   <!-- ================= 彈窗管理 ================= -->
 
-  <!-- 彈窗 1: 批量新增單字 (支援點 + 展開備註/例句) -->
+  <!-- 彈窗 1: 批量新增單字 -->
   <div id="batch-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
       <div class="flex justify-between items-center mb-3">
@@ -225,7 +229,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 2: 長按動作選單 (Action Sheet) -->
+  <!-- 彈窗 2: 長按動作選單 -->
   <div id="card-action-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50" onclick="toggleModal('card-action-modal')">
     <div class="bg-white rounded-3xl p-5 w-full max-w-xs shadow-2xl text-center" onclick="event.stopPropagation()">
       <h3 id="card-action-word" class="text-base font-black text-slate-800 mb-1">單字操作</h3>
@@ -641,7 +645,7 @@
       }
     }
 
-    // ================= 視圖 2: 單字集內頁 (長按操作) =================
+    // ================= 視圖 2: 單字集內頁 (長按手勢 + 向量喇叭) =================
     function openDeckDetail(deckId) {
       currentDeckId = deckId;
       document.getElementById("view-home").classList.add("hidden");
@@ -742,18 +746,16 @@
             <p class="text-sm font-semibold text-slate-700">${c.def}</p>
             ${c.note ? `<p class="text-xs text-slate-400 mt-1 italic">${c.note}</p>` : ''}
           </div>
-          <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition">
-            🔊
+          <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
           </button>
         `;
 
-        // 綁定長按事件
         setupLongPress(cardEl, c.id, c.word);
         listContainer.appendChild(cardEl);
       });
     }
 
-    // 長按手勢核心
     function setupLongPress(el, cardId, word) {
       let timer = null;
       let isLongPress = false;
@@ -836,7 +838,7 @@
       }
     }
 
-    // ================= 批量新增單字 (加號展開備註/例句) =================
+    // ================= 批量新增單字 =================
     function openBatchAddModal() {
       const container = document.getElementById("batch-rows-container");
       container.innerHTML = "";
@@ -883,7 +885,6 @@
           </div>
         </div>
 
-        <!-- 隱藏的備註/例句輸入列 (點 + 展開) -->
         <div class="batch-note-container hidden px-1">
           <input type="text" placeholder="補充說明 / 例句 (選填)" class="batch-note w-full border border-dashed border-slate-300 rounded-xl p-2 text-xs bg-slate-50/70 outline-none focus:border-blue-400">
         </div>
