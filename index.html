@@ -64,7 +64,7 @@
 
       <div id="deck-status-banner" class="mb-5 p-4 rounded-2xl flex items-center justify-between transition"></div>
 
-      <!-- 嵌入式學習單字卡區塊 (可無限翻轉、左滑切換) -->
+      <!-- 嵌入式學習單字卡區塊 (純手勢左右滑動切換、點擊翻轉) -->
       <div id="inline-learning-section" class="mb-8 hidden">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-black text-slate-500 flex items-center gap-1">
@@ -86,28 +86,25 @@
             
             <!-- 正面 (英文面，單字下方設有喇叭按鈕) -->
             <div class="absolute inset-0 bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden">
-              <div class="w-full flex justify-between items-center text-[11px] font-bold text-slate-400">
+              <div class="w-full flex justify-start items-center text-[11px] font-bold text-slate-400">
                 <span id="learn-card-pos" class="bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full">n.</span>
-                <span class="text-blue-500">點擊翻轉 ➔</span>
               </div>
 
               <div class="text-center my-auto flex flex-col items-center">
                 <h3 id="learn-card-word" class="text-3xl font-black text-slate-800 tracking-wide mb-1"></h3>
                 <p id="learn-card-phonetic" class="text-xs text-slate-400 mb-2"></p>
-                <!-- 喇叭按鈕置於單字正下方 -->
                 <button onclick="speakCurrentLearnWord(event)" class="p-2 bg-white hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-full shadow-sm border border-slate-200/80 transition flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                 </button>
               </div>
 
-              <span class="text-[11px] text-slate-400 font-medium">← 左滑切換下一個單字</span>
+              <div></div>
             </div>
 
             <!-- 背面 (中文釋義與補充說明) -->
             <div class="absolute inset-0 bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden rotate-y-180">
-              <div class="w-full flex justify-between items-center text-[11px] font-bold text-slate-400">
+              <div class="w-full flex justify-start items-center text-[11px] font-bold text-slate-400">
                 <span id="learn-card-back-pos" class="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">n.</span>
-                <span class="text-slate-400">釋義</span>
               </div>
 
               <div class="text-center my-auto px-4 max-h-36 overflow-y-auto">
@@ -115,7 +112,7 @@
                 <p id="learn-card-note" class="text-xs text-slate-300 italic"></p>
               </div>
 
-              <span class="text-[11px] text-slate-400 font-medium">點擊再次翻面</span>
+              <div></div>
             </div>
 
           </div>
