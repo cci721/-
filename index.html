@@ -10,7 +10,6 @@
     .transform-style-3d { transform-style: preserve-3d; }
     .backface-hidden { backface-visibility: hidden; }
     .rotate-y-180 { transform: rotateY(180deg); }
-    .swipe-content { transition: transform 0.25s ease-out; }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8 flex justify-center items-start pb-28 select-none">
@@ -67,7 +66,7 @@
       <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 id="deck-detail-title" class="text-2xl font-black text-slate-800">單字集名稱</h2>
-          <p id="deck-detail-count" class="text-xs text-slate-400 font-semibold mt-0.5">共 0 個單字</p>
+          <p id="deck-detail-count" class="text-xs text-slate-400 font-semibold mt-0.5">共 0 個單字 (長按單字可編輯或刪除)</p>
         </div>
         
         <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
@@ -126,7 +125,6 @@
             <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
             
             <div class="my-auto text-center w-full">
-              <!-- 聽力播放按鈕 (聽力模式) -->
               <div id="listen-play-btn-box" class="hidden mb-3">
                 <button onclick="speakAnswerWord(); event.stopPropagation();" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md text-sm transition">
                   🔊 點擊播放發音
@@ -137,14 +135,12 @@
               <span id="review-pos-badge" class="text-xs font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full inline-block mb-3"></span>
               <p id="review-phonetic-hint" class="text-slate-400 text-sm mb-4"></p>
 
-              <!-- 輸入框 (填寫/拼寫/聽力模式) -->
               <div id="review-input-container" class="w-full max-w-sm mx-auto mb-2" onclick="event.stopPropagation()">
                 <input id="user-answer-input" type="text" placeholder="在此輸入你的答案 (按 Enter 翻牌)..." 
                   class="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-center text-base font-medium outline-none focus:border-blue-500 transition"
                   onkeydown="handleAnswerKey(event)">
               </div>
 
-              <!-- 四選一選擇題按鈕群 -->
               <div id="review-choices-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md mx-auto my-2" onclick="event.stopPropagation()"></div>
             </div>
 
@@ -163,7 +159,8 @@
                 <h2 id="review-answer-main" class="text-2xl font-black tracking-wide text-white"></h2>
                 <span id="review-answer-pos" class="text-xs font-bold text-blue-300 bg-blue-950 px-2 py-0.5 rounded"></span>
               </div>
-              <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-2"></p>
+              <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
+              <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
               <button onclick="speakAnswerWord()" class="mt-2 text-xs bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 rounded-full text-blue-300 font-medium transition">🔊 聽發音</button>
             </div>
 
@@ -193,21 +190,22 @@
 
   <!-- ================= 彈窗管理 ================= -->
 
-  <!-- 彈窗 1: 批量新增單字 (三欄式) -->
+  <!-- 彈窗 1: 批量新增單字 (支援點 + 展開備註/例句) -->
   <div id="batch-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
       <div class="flex justify-between items-center mb-3">
         <div>
           <h3 class="text-xl font-black text-slate-800">批量新增單字</h3>
-          <p class="text-xs text-slate-400">填寫英文後會自動帶出詞性與釋義，可一次新增多筆！</p>
+          <p class="text-xs text-slate-400">點擊右側「+」可選填額外說明或例句</p>
         </div>
         <button onclick="toggleModal('batch-card-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
       </div>
 
       <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 px-2 mb-1">
-        <span class="col-span-4">英文單字 (Term)</span>
-        <span class="col-span-3">詞性 (POS)</span>
-        <span class="col-span-4">中文釋義 (Definition)</span>
+        <span class="col-span-4">英文單字</span>
+        <span class="col-span-3">詞性</span>
+        <span class="col-span-3">中文釋義</span>
+        <span class="col-span-1 text-center">說明</span>
         <span class="col-span-1 text-center">刪除</span>
       </div>
 
@@ -227,7 +225,25 @@
     </div>
   </div>
 
-  <!-- 彈窗 2: 編輯單個單字 -->
+  <!-- 彈窗 2: 長按動作選單 (Action Sheet) -->
+  <div id="card-action-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50" onclick="toggleModal('card-action-modal')">
+    <div class="bg-white rounded-3xl p-5 w-full max-w-xs shadow-2xl text-center" onclick="event.stopPropagation()">
+      <h3 id="card-action-word" class="text-base font-black text-slate-800 mb-1">單字操作</h3>
+      <p class="text-xs text-slate-400 mb-4">請選擇你要執行的操作</p>
+      
+      <div class="space-y-2">
+        <button onclick="executeActionEdit()" class="w-full py-3 bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-700 font-bold rounded-2xl text-xs transition">
+          ✏️ 編輯單字內容
+        </button>
+        <button onclick="executeActionDelete()" class="w-full py-3 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-rose-500 font-bold rounded-2xl text-xs transition">
+          🗑️ 刪除單字
+        </button>
+      </div>
+      <button onclick="toggleModal('card-action-modal')" class="mt-3 text-xs text-slate-400 font-bold">取消</button>
+    </div>
+  </div>
+
+  <!-- 彈窗 3: 編輯單個單字 -->
   <div id="edit-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-4">編輯單字卡</h3>
@@ -255,6 +271,10 @@
           <input id="edit-card-def" type="text" class="w-full border rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
         </div>
         <div>
+          <label class="text-xs font-bold text-slate-400 block mb-1">補充說明 / 例句 (選填)</label>
+          <input id="edit-card-note" type="text" placeholder="例如：片語搭配或例句" class="w-full border rounded-xl p-2.5 text-sm outline-none bg-slate-50">
+        </div>
+        <div>
           <label class="text-xs font-bold text-slate-400 block mb-1">音標 (選填)</label>
           <input id="edit-card-phonetic" type="text" class="w-full border rounded-xl p-2.5 text-sm outline-none bg-slate-50">
         </div>
@@ -266,7 +286,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 3: 單字集/資料夾 選單操作 -->
+  <!-- 彈窗 4: 單字集/資料夾 選單操作 -->
   <div id="deck-menu-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
       <h3 id="deck-menu-title" class="text-base font-black text-slate-800 mb-4">管理單字集</h3>
@@ -295,7 +315,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 4: 新增資料夾 -->
+  <!-- 彈窗 5: 新增資料夾 -->
   <div id="folder-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">📁 新增資料夾</h3>
@@ -307,7 +327,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 5: 新增單字集 -->
+  <!-- 彈窗 6: 新增單字集 -->
   <div id="deck-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">新增單字集</h3>
@@ -328,7 +348,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 選擇複習模式 -->
+  <!-- 彈窗 7: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <h3 class="text-lg font-bold text-slate-800 mb-4">選擇複習模式</h3>
@@ -363,7 +383,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 7: 複習結算統計 -->
+  <!-- 彈窗 8: 複習結算統計 -->
   <div id="summary-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl text-center">
       <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">🎉</div>
@@ -413,9 +433,9 @@
           lastReviewed: null,
           nextReview: new Date().toISOString().split("T")[0],
           cards: [
-            { id: "c1", word: "passivation", pos: "n.", phonetic: "/ˌpæs.əˈveɪ.ʃən/", def: "鈍化；鈍化作用", status: "hard", createdAt: 1 },
-            { id: "c2", word: "persistent", pos: "adj.", phonetic: "/pərˈsɪs.tənt/", def: "堅持不懈的；持續的", status: "easy", createdAt: 2 },
-            { id: "c3", word: "aesthetic", pos: "adj.", phonetic: "/esˈθet̬.ɪk/", def: "美學的；審美的", status: "medium", createdAt: 3 }
+            { id: "c1", word: "passivation", pos: "n.", phonetic: "/ˌpæs.əˈveɪ.ʃən/", def: "鈍化；鈍化作用", note: "The passivation layer reduces dark current.", status: "hard", createdAt: 1 },
+            { id: "c2", word: "persistent", pos: "adj.", phonetic: "/pərˈsɪs.tənt/", def: "堅持不懈的；持續的", note: "", status: "easy", createdAt: 2 },
+            { id: "c3", word: "aesthetic", pos: "adj.", phonetic: "/esˈθet̬.ɪk/", def: "美學的；審美的", note: "", status: "medium", createdAt: 3 }
           ]
         }
       }
@@ -433,6 +453,7 @@
     let isCardFlipped = false;
     let matchSelected = null;
     let matchRemaining = 0;
+    let activeActionCardId = null;
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -620,7 +641,7 @@
       }
     }
 
-    // ================= 視圖 2: 單字集內頁 =================
+    // ================= 視圖 2: 單字集內頁 (長按操作) =================
     function openDeckDetail(deckId) {
       currentDeckId = deckId;
       document.getElementById("view-home").classList.add("hidden");
@@ -634,7 +655,7 @@
     function renderDeckDetailHeader() {
       const deck = appData.decks[currentDeckId];
       document.getElementById("deck-detail-title").innerText = deck.name;
-      document.getElementById("deck-detail-count").innerText = `共 ${deck.cards.length} 個單字`;
+      document.getElementById("deck-detail-count").innerText = `共 ${deck.cards.length} 個單字 (長按單字可編輯或刪除)`;
 
       const fab = document.getElementById("fab-review-btn");
       if (deck.cards.length === 0) {
@@ -702,76 +723,77 @@
       if (!sortAscending) sortedCards.reverse();
 
       sortedCards.forEach(c => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
-
         let statusBadge = "";
         if (c.status === "hard") statusBadge = `<span class="text-sm font-bold text-rose-500">✕</span>`;
         if (c.status === "medium") statusBadge = `<span class="text-sm font-bold text-amber-500">△</span>`;
         if (c.status === "easy") statusBadge = `<span class="text-sm font-bold text-emerald-500">○</span>`;
 
-        wrapper.innerHTML = `
-          <div class="absolute inset-y-0 right-0 flex items-stretch">
-            <button onclick="openEditCardModal('${c.id}')" class="px-4 bg-amber-500 text-white text-xs font-bold flex items-center justify-center hover:bg-amber-600 transition">
-              編輯
-            </button>
-            <button onclick="deleteCard('${c.id}')" class="px-4 bg-rose-600 text-white text-xs font-bold flex items-center justify-center hover:bg-rose-700 transition">
-              刪除
-            </button>
-          </div>
+        const cardEl = document.createElement("div");
+        cardEl.className = "bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-2xl p-4 flex items-start justify-between gap-3 transition cursor-pointer active:scale-[0.99]";
 
-          <div id="swipe-item-${c.id}" class="swipe-content relative bg-slate-50 p-4 flex items-start justify-between gap-3 cursor-grab">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <h4 class="font-black text-slate-800 text-base">${c.word}</h4>
-                <span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded">${c.pos || 'n.'}</span>
-                <span class="text-xs text-slate-400">${c.phonetic || ''}</span>
-                ${statusBadge}
-              </div>
-              <p class="text-sm font-semibold text-slate-700">${c.def}</p>
+        cardEl.innerHTML = `
+          <div class="flex-1 pointer-events-none">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 class="font-black text-slate-800 text-base">${c.word}</h4>
+              <span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded">${c.pos || 'n.'}</span>
+              <span class="text-xs text-slate-400">${c.phonetic || ''}</span>
+              ${statusBadge}
             </div>
-            <button onclick="speakText('${c.word}')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition">🔊</button>
+            <p class="text-sm font-semibold text-slate-700">${c.def}</p>
+            ${c.note ? `<p class="text-xs text-slate-400 mt-1 italic">${c.note}</p>` : ''}
           </div>
+          <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition">
+            🔊
+          </button>
         `;
 
-        listContainer.appendChild(wrapper);
-        setupSwipe(wrapper.querySelector(`#swipe-item-${c.id}`));
+        // 綁定長按事件
+        setupLongPress(cardEl, c.id, c.word);
+        listContainer.appendChild(cardEl);
       });
     }
 
-    function setupSwipe(el) {
-      let startX = 0, currentX = 0, isSwiping = false;
+    // 長按手勢核心
+    function setupLongPress(el, cardId, word) {
+      let timer = null;
+      let isLongPress = false;
 
-      function handleTouchStart(e) {
-        startX = e.touches ? e.touches[0].clientX : e.clientX;
-        isSwiping = true;
-      }
-      function handleTouchMove(e) {
-        if (!isSwiping) return;
-        currentX = e.touches ? e.touches[0].clientX : e.clientX;
-        const diff = currentX - startX;
-        if (diff < 0 && diff > -130) {
-          el.style.transform = `translateX(${diff}px)`;
-        }
-      }
-      function handleTouchEnd() {
-        if (!isSwiping) return;
-        isSwiping = false;
-        const diff = currentX - startX;
-        if (diff < -50) {
-          el.style.transform = "translateX(-120px)";
-        } else {
-          el.style.transform = "translateX(0px)";
-        }
+      function start(e) {
+        isLongPress = false;
+        timer = setTimeout(() => {
+          isLongPress = true;
+          if (navigator.vibrate) navigator.vibrate(40);
+          openCardActionModal(cardId, word);
+        }, 500);
       }
 
-      el.addEventListener("touchstart", handleTouchStart, { passive: true });
-      el.addEventListener("touchmove", handleTouchMove, { passive: true });
-      el.addEventListener("touchend", handleTouchEnd);
+      function cancel() {
+        if (timer) clearTimeout(timer);
+      }
 
-      el.addEventListener("mousedown", handleTouchStart);
-      window.addEventListener("mousemove", (e) => { if(isSwiping) handleTouchMove(e); });
-      window.addEventListener("mouseup", handleTouchEnd);
+      el.addEventListener("touchstart", start, { passive: true });
+      el.addEventListener("touchend", cancel);
+      el.addEventListener("touchmove", cancel);
+
+      el.addEventListener("mousedown", start);
+      el.addEventListener("mouseup", cancel);
+      el.addEventListener("mouseleave", cancel);
+    }
+
+    function openCardActionModal(cardId, word) {
+      activeActionCardId = cardId;
+      document.getElementById("card-action-word").innerText = word;
+      toggleModal("card-action-modal");
+    }
+
+    function executeActionEdit() {
+      toggleModal("card-action-modal");
+      openEditCardModal(activeActionCardId);
+    }
+
+    function executeActionDelete() {
+      toggleModal("card-action-modal");
+      deleteCard(activeActionCardId);
     }
 
     // ================= 單字編輯與刪除 =================
@@ -783,6 +805,7 @@
       document.getElementById("edit-card-word").value = card.word;
       document.getElementById("edit-card-pos").value = card.pos || "n.";
       document.getElementById("edit-card-def").value = card.def;
+      document.getElementById("edit-card-note").value = card.note || "";
       document.getElementById("edit-card-phonetic").value = card.phonetic || "";
 
       toggleModal("edit-card-modal");
@@ -796,6 +819,7 @@
       card.word = document.getElementById("edit-card-word").value.trim();
       card.pos = document.getElementById("edit-card-pos").value;
       card.def = document.getElementById("edit-card-def").value.trim();
+      card.note = document.getElementById("edit-card-note").value.trim();
       card.phonetic = document.getElementById("edit-card-phonetic").value.trim();
 
       saveData();
@@ -812,7 +836,7 @@
       }
     }
 
-    // ================= 批量新增單字 =================
+    // ================= 批量新增單字 (加號展開備註/例句) =================
     function openBatchAddModal() {
       const container = document.getElementById("batch-rows-container");
       container.innerHTML = "";
@@ -828,31 +852,52 @@
 
       const row = document.createElement("div");
       row.id = rowId;
-      row.className = "grid grid-cols-12 gap-2 items-center";
+      row.className = "border-b border-slate-100 pb-2.5 space-y-1.5";
       row.innerHTML = `
-        <div class="col-span-4">
-          <input type="text" placeholder="英文單字" class="batch-word w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" onblur="handleBatchWordBlur(this, '${rowId}')">
+        <div class="grid grid-cols-12 gap-2 items-center">
+          <div class="col-span-4">
+            <input type="text" placeholder="英文單字" class="batch-word w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" onblur="handleBatchWordBlur(this, '${rowId}')">
+          </div>
+          <div class="col-span-3">
+            <select class="batch-pos w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500">
+              <option value="n.">n. 名詞</option>
+              <option value="v.">v. 動詞</option>
+              <option value="adj.">adj. 形容詞</option>
+              <option value="adv.">adv. 副詞</option>
+              <option value="phr.">phr. 片語</option>
+              <option value="prep.">prep. 介系詞</option>
+              <option value="conj.">conj. 連接詞</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="col-span-3">
+            <input type="text" placeholder="中文釋義" class="batch-def w-full border border-slate-200 rounded-xl p-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="col-span-1 text-center">
+            <button onclick="toggleNoteRow('${rowId}')" title="展開填寫備註/例句" class="text-xs bg-slate-100 hover:bg-blue-100 text-blue-600 font-bold w-7 h-7 rounded-lg transition">
+              +
+            </button>
+          </div>
+          <div class="col-span-1 text-center">
+            <button onclick="removeBatchRow('${rowId}')" class="text-slate-300 hover:text-rose-500 p-1 font-bold">✕</button>
+          </div>
         </div>
-        <div class="col-span-3">
-          <select class="batch-pos w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500">
-            <option value="n.">n. 名詞</option>
-            <option value="v.">v. 動詞</option>
-            <option value="adj.">adj. 形容詞</option>
-            <option value="adv.">adv. 副詞</option>
-            <option value="phr.">phr. 片語</option>
-            <option value="prep.">prep. 介系詞</option>
-            <option value="conj.">conj. 連接詞</option>
-            <option value="other">其他</option>
-          </select>
-        </div>
-        <div class="col-span-4">
-          <input type="text" placeholder="中文釋義" class="batch-def w-full border border-slate-200 rounded-xl p-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div class="col-span-1 text-center">
-          <button onclick="removeBatchRow('${rowId}')" class="text-slate-300 hover:text-rose-500 p-1 font-bold">✕</button>
+
+        <!-- 隱藏的備註/例句輸入列 (點 + 展開) -->
+        <div class="batch-note-container hidden px-1">
+          <input type="text" placeholder="補充說明 / 例句 (選填)" class="batch-note w-full border border-dashed border-slate-300 rounded-xl p-2 text-xs bg-slate-50/70 outline-none focus:border-blue-400">
         </div>
       `;
       container.appendChild(row);
+    }
+
+    function toggleNoteRow(rowId) {
+      const row = document.getElementById(rowId);
+      const noteBox = row.querySelector(".batch-note-container");
+      noteBox.classList.toggle("hidden");
+      if (!noteBox.classList.contains("hidden")) {
+        noteBox.querySelector("input").focus();
+      }
     }
 
     function removeBatchRow(rowId) {
@@ -901,11 +946,12 @@
         const word = r.querySelector(".batch-word").value.trim();
         const pos = r.querySelector(".batch-pos").value;
         const def = r.querySelector(".batch-def").value.trim() || "(待補充釋義)";
+        const note = r.querySelector(".batch-note")?.value.trim() || "";
 
         if (word) {
           appData.decks[currentDeckId].cards.push({
             id: "c-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
-            word, pos, def,
+            word, pos, def, note,
             status: undefined,
             createdAt: Date.now()
           });
@@ -956,7 +1002,6 @@
       const flipHint = document.getElementById("flip-hint-text");
       const modeBadge = document.getElementById("review-mode-title-badge");
 
-      // 重設區塊顯示
       standardBox.classList.remove("hidden");
       matchBox.classList.add("hidden");
       inputContainer.classList.add("hidden");
@@ -1037,6 +1082,7 @@
       document.getElementById("review-answer-main").innerText = card.word;
       document.getElementById("review-answer-pos").innerText = card.pos || "n.";
       document.getElementById("review-answer-sub").innerText = `${card.phonetic ? card.phonetic + ' ' : ''}${card.def}`;
+      document.getElementById("review-answer-note").innerText = card.note ? `說明: ${card.note}` : "";
 
       isCardFlipped = false;
       document.getElementById("review-card").classList.remove("rotate-y-180");
