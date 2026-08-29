@@ -10,6 +10,7 @@
     .transform-style-3d { transform-style: preserve-3d; }
     .backface-hidden { backface-visibility: hidden; }
     .rotate-y-180 { transform: rotateY(180deg); }
+    .learn-card-content { transition: transform 0.25s ease-out; }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8 flex justify-center items-start pb-28 select-none">
@@ -63,6 +64,64 @@
 
       <div id="deck-status-banner" class="mb-5 p-4 rounded-2xl flex items-center justify-between transition"></div>
 
+      <!-- 嵌入式學習單字卡區塊 (可無限翻轉、左滑切換) -->
+      <div id="inline-learning-section" class="mb-8 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black text-slate-500 flex items-center gap-1">
+            <span>📇 學習單字卡</span>
+            <span id="learn-card-progress" class="text-blue-600 font-bold ml-1">1/1</span>
+          </span>
+          <div class="flex items-center gap-1">
+            <button onclick="prevLearnCard()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition">
+              ← 上一個
+            </button>
+            <button onclick="nextLearnCard()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition">
+              下一個 →
+            </button>
+          </div>
+        </div>
+
+        <div class="w-full h-56 perspective cursor-pointer" id="learn-card-box" onclick="flipLearnCard()">
+          <div id="learn-card-inner" class="learn-card-content relative w-full h-full duration-500 transform-style-3d rounded-2xl shadow-sm border border-slate-200/90">
+            
+            <!-- 正面 (英文面，單字下方設有喇叭按鈕) -->
+            <div class="absolute inset-0 bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden">
+              <div class="w-full flex justify-between items-center text-[11px] font-bold text-slate-400">
+                <span id="learn-card-pos" class="bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full">n.</span>
+                <span class="text-blue-500">點擊翻轉 ➔</span>
+              </div>
+
+              <div class="text-center my-auto flex flex-col items-center">
+                <h3 id="learn-card-word" class="text-3xl font-black text-slate-800 tracking-wide mb-1"></h3>
+                <p id="learn-card-phonetic" class="text-xs text-slate-400 mb-2"></p>
+                <!-- 喇叭按鈕置於單字正下方 -->
+                <button onclick="speakCurrentLearnWord(event)" class="p-2 bg-white hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-full shadow-sm border border-slate-200/80 transition flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+              </div>
+
+              <span class="text-[11px] text-slate-400 font-medium">← 左滑切換下一個單字</span>
+            </div>
+
+            <!-- 背面 (中文釋義與補充說明) -->
+            <div class="absolute inset-0 bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden rotate-y-180">
+              <div class="w-full flex justify-between items-center text-[11px] font-bold text-slate-400">
+                <span id="learn-card-back-pos" class="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">n.</span>
+                <span class="text-slate-400">釋義</span>
+              </div>
+
+              <div class="text-center my-auto px-4 max-h-36 overflow-y-auto">
+                <h4 id="learn-card-def" class="text-xl font-bold text-white mb-2"></h4>
+                <p id="learn-card-note" class="text-xs text-slate-300 italic"></p>
+              </div>
+
+              <span class="text-[11px] text-slate-400 font-medium">點擊再次翻面</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 id="deck-detail-title" class="text-2xl font-black text-slate-800">單字集名稱</h2>
@@ -109,7 +168,6 @@
         </button>
       </div>
 
-      <!-- 配對連連看模式容器 -->
       <div id="match-game-container" class="hidden">
         <div class="text-center mb-4">
           <p class="text-xs font-bold text-slate-500">點選左側英文與右側中文進行配對消除</p>
@@ -117,10 +175,8 @@
         <div class="grid grid-cols-2 gap-3" id="match-grid"></div>
       </div>
 
-      <!-- 卡片複習主容器 -->
       <div id="standard-review-container" class="w-full min-h-[320px] perspective mb-5 cursor-pointer" onclick="handleCardClick()">
         <div id="review-card" class="relative w-full h-full duration-500 transform-style-3d shadow-md rounded-2xl min-h-[320px]">
-          <!-- 正面 -->
           <div class="absolute w-full h-full bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden border-2 border-slate-100">
             <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
             
@@ -150,7 +206,6 @@
             </div>
           </div>
 
-          <!-- 背面 -->
           <div class="absolute w-full h-full bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden rotate-y-180" onclick="event.stopPropagation()">
             <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">ANSWER</span>
             
@@ -207,8 +262,8 @@
 
       <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 px-2 mb-1">
         <span class="col-span-4">英文單字</span>
-        <span class="col-span-3">詞性</span>
-        <span class="col-span-3">中文釋義</span>
+        <span class="col-span-2">詞性</span>
+        <span class="col-span-4">中文釋義</span>
         <span class="col-span-1 text-center">說明</span>
         <span class="col-span-1 text-center">刪除</span>
       </div>
@@ -447,6 +502,8 @@
 
     let currentDeckId = null;
     let sortAscending = true;
+    let learnCardIndex = 0;
+    let isLearnCardFlipped = false;
 
     let session = {
       mode: "FLASH_CARD",
@@ -470,7 +527,6 @@
         const fileName = `vocab_backup_${dateStr}.json`;
         const blob = new Blob([dataStr], { type: "application/json" });
 
-        // 1. 手機端 (iOS/Android) 優先呼叫原生分享面板
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile && navigator.share && navigator.canShare) {
           const file = new File([blob], fileName, { type: "application/json" });
@@ -484,7 +540,6 @@
           }
         }
 
-        // 2. 電腦端：直接觸發下載
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.style.display = "none";
@@ -531,6 +586,7 @@
 
     function init() {
       renderHomeScreen();
+      setupLearnCardSwipe();
     }
 
     // ================= 視圖 1: 首頁 =================
@@ -679,12 +735,16 @@
     // ================= 視圖 2: 單字集內頁 =================
     function openDeckDetail(deckId) {
       currentDeckId = deckId;
+      learnCardIndex = 0;
+      isLearnCardFlipped = false;
+
       document.getElementById("view-home").classList.add("hidden");
       document.getElementById("view-deck-detail").classList.remove("hidden");
       document.getElementById("view-review").classList.add("hidden");
 
       renderDeckDetailHeader();
       renderCardList();
+      renderInlineLearnCard();
     }
 
     function renderDeckDetailHeader() {
@@ -723,6 +783,92 @@
           <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">已複習</span>
         `;
       }
+    }
+
+    // ================= 嵌入式學習單字卡功能 =================
+    function renderInlineLearnCard() {
+      const deck = appData.decks[currentDeckId];
+      const section = document.getElementById("inline-learning-section");
+
+      if (!deck.cards || deck.cards.length === 0) {
+        section.classList.add("hidden");
+        return;
+      }
+      section.classList.remove("hidden");
+
+      if (learnCardIndex >= deck.cards.length) learnCardIndex = 0;
+      if (learnCardIndex < 0) learnCardIndex = deck.cards.length - 1;
+
+      const card = deck.cards[learnCardIndex];
+      document.getElementById("learn-card-progress").innerText = `${learnCardIndex + 1}/${deck.cards.length}`;
+      document.getElementById("learn-card-pos").innerText = card.pos || "n.";
+      document.getElementById("learn-card-word").innerText = card.word;
+      document.getElementById("learn-card-phonetic").innerText = card.phonetic || "";
+
+      document.getElementById("learn-card-back-pos").innerText = card.pos || "n.";
+      document.getElementById("learn-card-def").innerText = card.def;
+      document.getElementById("learn-card-note").innerText = card.note || "";
+
+      isLearnCardFlipped = false;
+      document.getElementById("learn-card-inner").classList.remove("rotate-y-180");
+    }
+
+    function flipLearnCard() {
+      isLearnCardFlipped = !isLearnCardFlipped;
+      const inner = document.getElementById("learn-card-inner");
+      if (isLearnCardFlipped) {
+        inner.classList.add("rotate-y-180");
+      } else {
+        inner.classList.remove("rotate-y-180");
+      }
+    }
+
+    function nextLearnCard() {
+      const deck = appData.decks[currentDeckId];
+      if (!deck.cards || deck.cards.length === 0) return;
+      learnCardIndex = (learnCardIndex + 1) % deck.cards.length;
+      renderInlineLearnCard();
+    }
+
+    function prevLearnCard() {
+      const deck = appData.decks[currentDeckId];
+      if (!deck.cards || deck.cards.length === 0) return;
+      learnCardIndex = (learnCardIndex - 1 + deck.cards.length) % deck.cards.length;
+      renderInlineLearnCard();
+    }
+
+    function speakCurrentLearnWord(e) {
+      e.stopPropagation();
+      const deck = appData.decks[currentDeckId];
+      const card = deck?.cards[learnCardIndex];
+      if (card) speakText(card.word);
+    }
+
+    function setupLearnCardSwipe() {
+      const cardEl = document.getElementById("learn-card-box");
+      let startX = 0, currentX = 0, isTouching = false;
+
+      cardEl.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        isTouching = true;
+      }, { passive: true });
+
+      cardEl.addEventListener("touchmove", (e) => {
+        if (!isTouching) return;
+        currentX = e.touches[0].clientX;
+      }, { passive: true });
+
+      cardEl.addEventListener("touchend", () => {
+        if (!isTouching) return;
+        isTouching = false;
+        const diff = currentX - startX;
+        if (diff < -50) {
+          nextLearnCard();
+        } else if (diff > 50) {
+          prevLearnCard();
+        }
+      });
     }
 
     function toggleSortOrder() {
@@ -857,6 +1003,7 @@
 
       saveData();
       renderCardList();
+      renderInlineLearnCard();
       toggleModal("edit-card-modal");
     }
 
@@ -866,10 +1013,11 @@
         saveData();
         renderDeckDetailHeader();
         renderCardList();
+        renderInlineLearnCard();
       }
     }
 
-    // ================= 批量新增單字 (純英文詞性) =================
+    // ================= 批量新增單字 =================
     function openBatchAddModal() {
       const container = document.getElementById("batch-rows-container");
       container.innerHTML = "";
@@ -889,10 +1037,10 @@
       row.innerHTML = `
         <div class="grid grid-cols-12 gap-2 items-center">
           <div class="col-span-4">
-            <input type="text" placeholder="英文單字" class="batch-word w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" onblur="handleBatchWordBlur(this, '${rowId}')">
+            <input type="text" placeholder="英文單字" class="batch-word w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500">
           </div>
-          <div class="col-span-3">
-            <select class="batch-pos w-full border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500">
+          <div class="col-span-2">
+            <select class="batch-pos w-full border border-slate-200 rounded-xl py-2.5 px-1.5 text-xs font-bold outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500 text-center">
               <option value="n.">n.</option>
               <option value="v.">v.</option>
               <option value="adj.">adj.</option>
@@ -903,7 +1051,7 @@
               <option value="other">other</option>
             </select>
           </div>
-          <div class="col-span-3">
+          <div class="col-span-4">
             <input type="text" placeholder="中文釋義" class="batch-def w-full border border-slate-200 rounded-xl p-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div class="col-span-1 text-center">
@@ -937,38 +1085,6 @@
       if (row) row.remove();
     }
 
-    async function handleBatchWordBlur(input, rowId) {
-      const word = input.value.trim();
-      if (!word) return;
-
-      const row = document.getElementById(rowId);
-      const defInput = row.querySelector(".batch-def");
-      const posSelect = row.querySelector(".batch-pos");
-
-      if (!defInput.value) {
-        try {
-          const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-          const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=${encodeURIComponent(word)}`);
-          const [dictRes, transRes] = await Promise.allSettled([dictPromise, transPromise]);
-
-          if (dictRes.status === "fulfilled" && dictRes.value.ok) {
-            const data = await dictRes.value.json();
-            const part = data[0]?.meanings[0]?.partOfSpeech;
-            if (part) {
-              if (part.includes("noun")) posSelect.value = "n.";
-              else if (part.includes("verb")) posSelect.value = "v.";
-              else if (part.includes("adjective")) posSelect.value = "adj.";
-              else if (part.includes("adverb")) posSelect.value = "adv.";
-            }
-          }
-          if (transRes.status === "fulfilled" && transRes.value.ok) {
-            const transData = await transRes.value.json();
-            if (transData[0]?.[0]?.[0]) defInput.value = transData[0][0][0];
-          }
-        } catch(e) {}
-      }
-    }
-
     function saveBatchCards() {
       const container = document.getElementById("batch-rows-container");
       const rows = container.children;
@@ -995,6 +1111,7 @@
         saveData();
         renderDeckDetailHeader();
         renderCardList();
+        renderInlineLearnCard();
         toggleModal("batch-card-modal");
       } else {
         alert("請至少填寫一個英文單字！");
@@ -1114,7 +1231,7 @@
       document.getElementById("review-answer-main").innerText = card.word;
       document.getElementById("review-answer-pos").innerText = card.pos || "n.";
       document.getElementById("review-answer-sub").innerText = `${card.phonetic ? card.phonetic + ' ' : ''}${card.def}`;
-      document.getElementById("review-answer-note").innerText = card.note ? `說明: ${card.note}` : "";
+      document.getElementById("review-answer-note").innerText = card.note || "";
 
       isCardFlipped = false;
       document.getElementById("review-card").classList.remove("rotate-y-180");
@@ -1322,6 +1439,7 @@
 
       renderDeckDetailHeader();
       renderCardList();
+      renderInlineLearnCard();
     }
 
     function speakAnswerWord() {
