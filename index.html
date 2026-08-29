@@ -470,8 +470,9 @@
         const fileName = `vocab_backup_${dateStr}.json`;
         const blob = new Blob([dataStr], { type: "application/json" });
 
-        // 1. 優先使用 iOS 原生分享面板 (iPhone Safari 最佳解)
-        if (navigator.share && navigator.canShare) {
+        // 1. 手機端 (iOS/Android) 優先呼叫原生分享面板
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile && navigator.share && navigator.canShare) {
           const file = new File([blob], fileName, { type: "application/json" });
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({
@@ -483,21 +484,20 @@
           }
         }
 
-        // 2. 一般瀏覽器下載流程
+        // 2. 電腦端：直接觸發下載
         const url = URL.createObjectURL(blob);
-        const downloadAnchor = document.createElement("a");
-        downloadAnchor.href = url;
-        downloadAnchor.download = fileName;
-        downloadAnchor.rel = "noopener";
-        downloadAnchor.target = "_blank";
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = fileName;
         
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
+        document.body.appendChild(a);
+        a.click();
         
         setTimeout(() => {
-          document.body.removeChild(downloadAnchor);
+          document.body.removeChild(a);
           URL.revokeObjectURL(url);
-        }, 1000);
+        }, 300);
       } catch (err) {
         if (err.name !== "AbortError") {
           alert("備份失敗，請稍後再試。");
@@ -676,7 +676,7 @@
       }
     }
 
-    // ================= 視圖 2: 單字集內頁 (長按手勢 + 向量喇叭) =================
+    // ================= 視圖 2: 單字集內頁 =================
     function openDeckDetail(deckId) {
       currentDeckId = deckId;
       document.getElementById("view-home").classList.add("hidden");
@@ -869,7 +869,7 @@
       }
     }
 
-    // ================= 批量新增單字 =================
+    // ================= 批量新增單字 (純英文詞性) =================
     function openBatchAddModal() {
       const container = document.getElementById("batch-rows-container");
       container.innerHTML = "";
