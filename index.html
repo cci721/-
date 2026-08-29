@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>背單字</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 開源文字辨識 OCR 庫 -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     .perspective { perspective: 1000px; }
     .transform-style-3d { transform-style: preserve-3d; }
@@ -28,11 +26,21 @@
           </h1>
           <p class="text-xs text-slate-400 mt-0.5">點擊單字集進入學習與複習</p>
         </div>
-        <div class="flex gap-2 w-full sm:w-auto">
-          <button onclick="toggleModal('folder-modal')" class="flex-1 sm:flex-none text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2.5 rounded-xl transition">
+        
+        <!-- 操作按鈕群 (備份/還原/新增) -->
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+          <button onclick="exportBackup()" title="匯出所有單字備份檔案" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
+            <span>📥 備份</span>
+          </button>
+          <button onclick="document.getElementById('import-file-input').click()" title="匯入備份檔案" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
+            <span>📤 還原</span>
+          </button>
+          <input type="file" id="import-file-input" accept=".json" class="hidden" onchange="importBackup(event)">
+
+          <button onclick="toggleModal('folder-modal')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2 rounded-xl transition">
             📁 新增資料夾
           </button>
-          <button onclick="openCreateDeckModal()" class="flex-1 sm:flex-none text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl transition shadow-md">
+          <button onclick="openCreateDeckModal()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl transition shadow-md">
             + 新增單字集
           </button>
         </div>
@@ -49,11 +57,7 @@
           <span>← 返回首頁</span>
         </button>
         <div class="flex gap-2">
-          <!-- 圖片辨識按鈕 -->
-          <button onclick="openOcrModal()" class="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-2 rounded-xl transition flex items-center gap-1">
-            <span>📸 圖片辨識</span>
-          </button>
-          <button onclick="openBatchAddModal()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1">
+          <button onclick="openBatchAddModal()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-1">
             <span>+ 新增單字</span>
           </button>
         </div>
@@ -80,12 +84,11 @@
         </div>
       </div>
 
-      <!-- 單字清單容器 -->
       <div id="word-list-container" class="space-y-3 mb-6"></div>
 
       <div id="empty-list-state" class="hidden text-center py-16 text-slate-400">
         <p class="text-base font-semibold">此單字集目前沒有單字</p>
-        <p class="text-xs mt-1">點擊右上角「+ 新增單字」或「📸 圖片辨識」立即擴充！</p>
+        <p class="text-xs mt-1">點擊右上角「+ 新增單字」立即擴充！</p>
       </div>
 
       <!-- 浮動複習按鈕 -->
@@ -170,47 +173,7 @@
 
   <!-- ================= 彈窗管理 ================= -->
 
-  <!-- 彈窗 1: 拍照/圖片 OCR 文字辨識新增 -->
-  <div id="ocr-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
-      <div class="flex justify-between items-center mb-3">
-        <div>
-          <h3 class="text-lg font-black text-slate-800">📸 圖片文字辨識加單字</h3>
-          <p class="text-xs text-slate-400">拍照或上傳圖片，自動提取英文單字並翻譯</p>
-        </div>
-        <button onclick="toggleModal('ocr-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-      </div>
-
-      <!-- 上傳與辨識區域 -->
-      <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center mb-3 hover:border-purple-400 transition bg-slate-50 cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
-        <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="processOcrImage(event)">
-        <span class="text-3xl block mb-1">📷</span>
-        <p class="text-xs font-bold text-slate-700">點此拍照或選擇圖片</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">支援課本講義、單字筆記照片</p>
-      </div>
-
-      <!-- 辨識進度提示 -->
-      <div id="ocr-loading" class="hidden text-center py-3">
-        <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent mb-1"></div>
-        <p id="ocr-status-text" class="text-xs font-bold text-purple-600">正在分析圖片單字...</p>
-      </div>
-
-      <!-- 辨識結果勾選清單 -->
-      <div id="ocr-results-container" class="flex-1 overflow-y-auto space-y-2 mb-3 max-h-60 pr-1"></div>
-
-      <div class="flex justify-between items-center pt-3 border-t">
-        <span id="ocr-selected-count" class="text-xs font-bold text-slate-400">已辨識 0 個單字</span>
-        <div class="flex gap-2">
-          <button onclick="toggleModal('ocr-modal')" class="px-3 py-2 text-slate-400 text-xs font-bold">取消</button>
-          <button onclick="importOcrSelectedWords()" id="ocr-import-btn" disabled class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs shadow transition disabled:opacity-40 disabled:cursor-not-allowed">
-            ✓ 匯入勾選單字
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 彈窗 2: 批量新增單字 (三欄式) -->
+  <!-- 彈窗 1: 批量新增單字 (三欄式) -->
   <div id="batch-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
       <div class="flex justify-between items-center mb-3">
@@ -244,7 +207,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 3: 編輯單個單字 -->
+  <!-- 彈窗 2: 編輯單個單字 -->
   <div id="edit-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-4">✏️ 編輯單字卡</h3>
@@ -283,7 +246,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 4: 單字集/資料夾 選單操作 (移動與刪除) -->
+  <!-- 彈窗 3: 單字集/資料夾 選單操作 -->
   <div id="deck-menu-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
       <h3 id="deck-menu-title" class="text-base font-black text-slate-800 mb-4">管理單字集</h3>
@@ -312,7 +275,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 5: 新增資料夾 -->
+  <!-- 彈窗 4: 新增資料夾 -->
   <div id="folder-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">📁 新增資料夾</h3>
@@ -324,7 +287,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 新增單字集 -->
+  <!-- 彈窗 5: 新增單字集 -->
   <div id="deck-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">新增單字集</h3>
@@ -345,7 +308,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 7: 選擇複習模式 -->
+  <!-- 彈窗 6: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <h3 class="text-lg font-bold text-slate-800 mb-1">選擇複習模式</h3>
@@ -381,7 +344,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 8: 複習結算統計 -->
+  <!-- 彈窗 7: 複習結算統計 -->
   <div id="summary-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl text-center">
       <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">🎉</div>
@@ -415,8 +378,10 @@
 
   <script>
     const SRS_INTERVALS = [1, 2, 4, 7, 15, 30];
+    const STORAGE_KEY = "vocab_app_data_v3";
 
-    let appData = JSON.parse(localStorage.getItem("vocab_app_data_v3")) || {
+    let rawSaved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("vocab_app_data_v2") || localStorage.getItem("vocab_app_data");
+    let appData = rawSaved ? JSON.parse(rawSaved) : {
       folders: [
         { id: "f-default", name: "常用詞庫" }
       ],
@@ -447,10 +412,44 @@
     };
 
     let isCardFlipped = false;
-    let ocrRecognizedItems = [];
 
     function saveData() {
-      localStorage.setItem("vocab_app_data_v3", JSON.stringify(appData));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function exportBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement("a");
+      const dateStr = new Date().toISOString().split("T")[0];
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `vocab_backup_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.decks) {
+            appData = imported;
+            saveData();
+            renderHomeScreen();
+            alert("🎉 備份還原成功！所有單字集已同步。");
+          } else {
+            alert("備份檔案格式不正確！");
+          }
+        } catch(err) {
+          alert("讀取檔案失敗，請確認是否為合法的 JSON 檔案。");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
     }
 
     function init() {
@@ -466,6 +465,8 @@
       const container = document.getElementById("home-decks-container");
       container.innerHTML = "";
       const today = new Date().toISOString().split("T")[0];
+
+      if (!appData.folders) appData.folders = [];
 
       appData.folders.forEach(folder => {
         const folderDecks = Object.values(appData.decks).filter(d => d.folderId === folder.id);
@@ -544,7 +545,6 @@
       renderHomeScreen();
     }
 
-    // ================= 單字集 三點選單 =================
     function openDeckMenu(e, deckId) {
       e.stopPropagation();
       const deck = appData.decks[deckId];
@@ -599,7 +599,7 @@
       }
     }
 
-    // ================= 視圖 2: 單字集內頁 (左滑手勢，已移除「滑動」文字) =================
+    // ================= 視圖 2: 單字集內頁 =================
     function openDeckDetail(deckId) {
       currentDeckId = deckId;
       document.getElementById("view-home").classList.add("hidden");
@@ -689,7 +689,6 @@
         if (c.status === "medium") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-600">▲ 模糊</span>`;
         if (c.status === "easy") statusBadge = `<span class="text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-600">⭕ 熟練</span>`;
 
-        // 乾淨的卡片：已拿掉「滑動」文字
         wrapper.innerHTML = `
           <div class="absolute inset-y-0 right-0 flex items-stretch">
             <button onclick="openEditCardModal('${c.id}')" class="px-4 bg-amber-500 text-white text-xs font-bold flex items-center gap-1 hover:bg-amber-600 transition">
@@ -754,135 +753,6 @@
       window.addEventListener("mouseup", handleTouchEnd);
     }
 
-    // ================= 圖片文字辨識 OCR 模組 =================
-    function openOcrModal() {
-      ocrRecognizedItems = [];
-      document.getElementById("ocr-results-container").innerHTML = "";
-      document.getElementById("ocr-selected-count").innerText = "已辨識 0 個單字";
-      document.getElementById("ocr-import-btn").disabled = true;
-      document.getElementById("ocr-loading").classList.add("hidden");
-      document.getElementById("ocr-file-input").value = "";
-      toggleModal("ocr-modal");
-    }
-
-    async function processOcrImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const loading = document.getElementById("ocr-loading");
-      const statusText = document.getElementById("ocr-status-text");
-      const container = document.getElementById("ocr-results-container");
-      
-      loading.classList.remove("hidden");
-      container.innerHTML = "";
-      statusText.innerText = "載入 OCR 引擎中...";
-
-      try {
-        const worker = await Tesseract.createWorker("eng");
-        statusText.innerText = "辨識文字中...";
-        const ret = await worker.recognize(file);
-        await worker.terminate();
-
-        const fullText = ret.data.text;
-        // 使用正則表達式提取所有長度 >= 2 的純英文字詞，並去重
-        const rawWords = fullText.match(/[a-zA-Z]{2,}/g) || [];
-        const uniqueWords = [...new Set(rawWords.map(w => w.toLowerCase()))];
-
-        if (uniqueWords.length === 0) {
-          container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">未辨識到清晰的英文單字，請換張圖片試試。</p>`;
-          loading.classList.add("hidden");
-          return;
-        }
-
-        statusText.innerText = `辨識到 ${uniqueWords.length} 個字詞，正在查詢釋義...`;
-        ocrRecognizedItems = [];
-
-        // 批次查詢前 25 個單字以保證效能
-        const targetWords = uniqueWords.slice(0, 25);
-
-        for (const word of targetWords) {
-          let pos = "n.";
-          let def = "";
-
-          try {
-            const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=${encodeURIComponent(word)}`);
-            const transData = await transRes.json();
-            if (transData[0]?.[0]?.[0]) def = transData[0][0][0];
-          } catch(e) {}
-
-          ocrRecognizedItems.push({
-            word,
-            pos,
-            def: def || "(點擊修改釋義)",
-            selected: true
-          });
-        }
-
-        renderOcrResults();
-      } catch (err) {
-        console.error(err);
-        alert("辨識過程發生錯誤，請重試。");
-      } finally {
-        loading.classList.add("hidden");
-      }
-    }
-
-    function renderOcrResults() {
-      const container = document.getElementById("ocr-results-container");
-      container.innerHTML = "";
-
-      ocrRecognizedItems.forEach((item, index) => {
-        const row = document.createElement("div");
-        row.className = "flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs";
-        row.innerHTML = `
-          <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleOcrCheck(${index})" class="rounded text-purple-600">
-          <span class="font-black text-slate-800 w-24 truncate">${item.word}</span>
-          <select onchange="ocrRecognizedItems[${index}].pos = this.value" class="bg-white border rounded px-1.5 py-0.5 text-[11px] font-bold">
-            <option value="n." ${item.pos === 'n.' ? 'selected' : ''}>n.</option>
-            <option value="v." ${item.pos === 'v.' ? 'selected' : ''}>v.</option>
-            <option value="adj." ${item.pos === 'adj.' ? 'selected' : ''}>adj.</option>
-            <option value="adv." ${item.pos === 'adv.' ? 'selected' : ''}>adv.</option>
-            <option value="phr." ${item.pos === 'phr.' ? 'selected' : ''}>phr.</option>
-          </select>
-          <input type="text" value="${item.def}" onchange="ocrRecognizedItems[${index}].def = this.value" class="flex-1 bg-white border rounded px-2 py-0.5 text-xs">
-        `;
-        container.appendChild(row);
-      });
-
-      updateOcrSelectedCount();
-    }
-
-    function toggleOcrCheck(index) {
-      ocrRecognizedItems[index].selected = !ocrRecognizedItems[index].selected;
-      updateOcrSelectedCount();
-    }
-
-    function updateOcrSelectedCount() {
-      const selected = ocrRecognizedItems.filter(i => i.selected);
-      document.getElementById("ocr-selected-count").innerText = `已選取 ${selected.length} / ${ocrRecognizedItems.length} 個單字`;
-      document.getElementById("ocr-import-btn").disabled = selected.length === 0;
-    }
-
-    function importOcrSelectedWords() {
-      const selected = ocrRecognizedItems.filter(i => i.selected);
-      selected.forEach(item => {
-        appData.decks[currentDeckId].cards.push({
-          id: "c-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
-          word: item.word,
-          pos: item.pos,
-          def: item.def,
-          status: undefined,
-          createdAt: Date.now()
-        });
-      });
-
-      saveData();
-      renderDeckDetailHeader();
-      renderCardList();
-      toggleModal("ocr-modal");
-      alert(`🎉 成功匯入 ${selected.length} 個單字！`);
-    }
-
     // ================= 單字編輯與刪除 =================
     function openEditCardModal(cardId) {
       const card = appData.decks[currentDeckId].cards.find(c => c.id === cardId);
@@ -921,7 +791,7 @@
       }
     }
 
-    // ================= 批量新增單字 (三欄式) =================
+    // ================= 批量新增單字 =================
     function openBatchAddModal() {
       const container = document.getElementById("batch-rows-container");
       container.innerHTML = "";
@@ -1223,7 +1093,7 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    // ================= 彈窗與新增單字集/資料夾 =================
+    // ================= 彈窗與管理 =================
     function toggleModal(id) {
       document.getElementById(id).classList.toggle("hidden");
     }
