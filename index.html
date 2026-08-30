@@ -83,7 +83,7 @@
       </div>
 
       <!-- 狀態橫幅 -->
-      <div id="deck-status-banner" class="mb-5 p-4 rounded-2xl flex items-center justify-between transition"></div>
+      <div id="deck-status-banner" class="mb-5 p-3.5 rounded-2xl transition"></div>
 
       <!-- 嵌入式學習單字卡區塊 -->
       <div id="inline-learning-section" class="mb-8 hidden">
@@ -248,11 +248,13 @@
               <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
               <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
               
+              <!-- 純喇叭發音按鈕 -->
               <button onclick="speakAnswerWord()" class="mt-2.5 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-blue-300 transition flex items-center justify-center mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
               </button>
             </div>
 
+            <!-- 純熟練度按鈕 -->
             <div class="w-full">
               <div class="grid grid-cols-3 gap-2">
                 <button onclick="rateCard('hard')" class="py-2.5 bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
@@ -418,7 +420,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 選擇複習模式 -->
+  <!-- 彈窗 6: 選擇複習模式 (已移除字義填寫) -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <div class="flex items-center justify-between mb-4">
@@ -436,10 +438,6 @@
 
         <button onclick="startReview('CHOICE')" class="w-full p-3 border-2 border-slate-200 hover:border-sky-500 hover:bg-sky-50/40 rounded-2xl flex items-center justify-center transition">
           <p class="font-black text-slate-800 text-sm">📖字義選擇</p>
-        </button>
-
-        <button onclick="startReview('EN_TO_ZH')" class="w-full p-3 border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex items-center justify-center transition">
-          <p class="font-black text-slate-800 text-sm">📖字義填寫</p>
         </button>
 
         <button onclick="startReview('ZH_TO_EN')" class="w-full p-3 border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 rounded-2xl flex items-center justify-center transition">
@@ -492,7 +490,6 @@
   </div>
 
   <script>
-    // 遺忘曲線間隔天數: 1, 4, 7, 14, 30
     const SRS_INTERVALS = [1, 4, 7, 14, 30];
     const STORAGE_KEY = "vocab_app_data_v3";
 
@@ -610,7 +607,7 @@
       setupLearnCardSwipe();
     }
 
-    // ================= 視圖 1: 首頁 =================
+    // ================= 視圖 1: 首頁 (資料夾刪除按鈕已換成直條紋垃圾桶圖示) =================
     function renderHomeScreen() {
       document.getElementById("view-home").classList.remove("hidden");
       document.getElementById("view-deck-detail").classList.add("hidden");
@@ -634,8 +631,11 @@
               <h3 class="font-black text-slate-800 text-lg">${folder.name}</h3>
               <span class="text-xs bg-slate-200 text-slate-600 font-bold px-2.5 py-0.5 rounded-full">${folderDecks.length} 個單字集</span>
             </div>
-            <button onclick="deleteFolder('${folder.id}')" title="刪除資料夾" class="text-slate-400 hover:text-rose-500 p-1 text-sm font-bold">
-              🗑️
+            <!-- 向量垃圾桶圖示 -->
+            <button onclick="deleteFolder('${folder.id}')" title="刪除資料夾" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition flex items-center justify-center">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M9 3h6v2H9V3zm-4 3h14v2H5V6zm2 3h10v12H7V9zm2 2v8h2v-8H9zm4 0v8h2v-8h-2z"/>
+              </svg>
             </button>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5" id="folder-grid-${folder.id}"></div>
@@ -788,33 +788,26 @@
       const nextDate = deck.nextReview;
 
       if (!nextDate || nextDate <= today) {
-        banner.className = "mb-5 p-4 rounded-2xl flex items-center justify-between bg-amber-50 border border-amber-200 text-amber-900";
+        banner.className = "mb-5 p-3.5 rounded-2xl flex items-center justify-between bg-amber-50 border border-amber-200 text-amber-900";
         banner.innerHTML = `
           <div>
-            <p class="font-bold text-sm">⏰ 今日建議複習</p>
-            <p class="text-xs text-amber-700 mt-0.5">強化記憶痕跡</p>
+            <p class="font-bold text-xs text-amber-800">今日建議複習（強化記憶痕跡）</p>
           </div>
-          <span class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg">待複習</span>
+          <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-md">待複習</span>
         `;
       } else {
-        // 計算倒數天數 (n) 與預計複習的遺忘曲線週期 (m)
         const diffDays = Math.ceil((new Date(nextDate) - new Date(today)) / (1000 * 60 * 60 * 24));
         const currentCount = deck.reviewCount || deck.level || 0;
         const targetInterval = SRS_INTERVALS[Math.min(currentCount - 1 >= 0 ? currentCount - 1 : 0, SRS_INTERVALS.length - 1)];
         
-        // 格式化 mm/dd
         const dateParts = nextDate.split("-");
         const mmdd = `${dateParts[1]}/${dateParts[2]}`;
 
-        banner.className = "mb-5 p-4 rounded-2xl flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-900";
+        banner.className = "mb-5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900";
         banner.innerHTML = `
-          <div>
-            <p class="font-bold text-sm flex items-center gap-1.5">
-              <span>🎉 記憶狀態良好</span>
-            </p>
-            <p class="text-xs text-emerald-700 mt-0.5">預計 <b>${diffDays}</b> 天後 <b>${mmdd}</b> 進行第 <b>${targetInterval}</b> 天複習</p>
-          </div>
-          <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg shrink-0">已複習</span>
+          <p class="text-xs font-semibold text-emerald-800 text-center">
+            預計 <b>${diffDays}</b> 天後 <b>${mmdd}</b> 進行第 <b>${targetInterval}</b> 天複習
+          </p>
         `;
       }
     }
@@ -1416,11 +1409,6 @@
         flipHint.innerText = "點選正確的中文釋義 ➔";
         modeBadge.innerText = "📖字義選擇";
         renderNextReviewCard();
-      } else if (mode === "EN_TO_ZH") {
-        inputContainer.classList.remove("hidden");
-        flipHint.innerText = "輸入中文釋義按 Enter 翻面 ➔";
-        modeBadge.innerText = "📖字義填寫";
-        renderNextReviewCard();
       } else if (mode === "ZH_TO_EN") {
         inputContainer.classList.remove("hidden");
         flipHint.innerText = "輸入英文單字按 Enter 翻面 ➔";
@@ -1480,7 +1468,7 @@
 
       const input = document.getElementById("user-answer-input");
       input.value = "";
-      if (["EN_TO_ZH", "ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
+      if (["ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
         setTimeout(() => input.focus(), 100);
       }
 
@@ -1617,14 +1605,14 @@
           compBox.className = "mb-3 text-xs px-3 py-1 rounded-lg inline-block font-semibold bg-rose-500/20 text-rose-300";
           compBox.innerText = "✕ 答錯了，請記住正確解答！";
         }
-      } else if (["EN_TO_ZH", "ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
+      } else if (["ZH_TO_EN", "LISTEN_SPELL"].includes(session.mode)) {
         const userAns = document.getElementById("user-answer-input").value.trim();
         if (userAns) {
           compBox.classList.remove("hidden");
-          const target = session.mode === "EN_TO_ZH" ? card.def : card.word;
-          const isMatch = target.toLowerCase().includes(userAns.toLowerCase());
+          const target = card.word;
+          const isMatch = target.toLowerCase() === userAns.toLowerCase();
           compBox.className = `mb-3 text-xs px-3 py-1 rounded-lg inline-block font-semibold ${isMatch ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`;
-          compBox.innerText = `你的作答: "${userAns}" (${isMatch ? '符合' : '比對解答'})`;
+          compBox.innerText = `你的作答: "${userAns}" (${isMatch ? '完全符合' : '比對解答'})`;
         } else {
           compBox.classList.add("hidden");
         }
