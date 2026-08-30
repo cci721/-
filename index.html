@@ -42,7 +42,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4 mb-6">
         <div>
           <h1 class="text-2xl font-black text-slate-800 flex items-center gap-2">
-            <span>📚 我的學習庫</span>
+            <span>背背被單自📚</span>
           </h1>
           <p class="text-xs text-slate-400 mt-0.5">點擊單字集進入學習與複習</p>
         </div>
@@ -82,7 +82,6 @@
         </div>
       </div>
 
-      <!-- 狀態橫幅 -->
       <div id="deck-status-banner" class="mb-5 p-3.5 rounded-2xl transition"></div>
 
       <!-- 嵌入式學習單字卡區塊 -->
@@ -420,7 +419,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 選擇複習模式 (已移除字義填寫) -->
+  <!-- 彈窗 6: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <div class="flex items-center justify-between mb-4">
@@ -607,7 +606,7 @@
       setupLearnCardSwipe();
     }
 
-    // ================= 視圖 1: 首頁 (資料夾刪除按鈕已換成直條紋垃圾桶圖示) =================
+    // ================= 視圖 1: 首頁 =================
     function renderHomeScreen() {
       document.getElementById("view-home").classList.remove("hidden");
       document.getElementById("view-deck-detail").classList.add("hidden");
@@ -631,8 +630,8 @@
               <h3 class="font-black text-slate-800 text-lg">${folder.name}</h3>
               <span class="text-xs bg-slate-200 text-slate-600 font-bold px-2.5 py-0.5 rounded-full">${folderDecks.length} 個單字集</span>
             </div>
-            <!-- 向量垃圾桶圖示 -->
-            <button onclick="deleteFolder('${folder.id}')" title="刪除資料夾" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition flex items-center justify-center">
+            <!-- 修正：點擊後立即觸發 blur() 確保恢復灰色 -->
+            <button onclick="deleteFolder('${folder.id}'); this.blur();" onmouseleave="this.blur()" ontouchend="this.blur()" title="刪除資料夾" class="text-slate-400 active:text-rose-600 focus:outline-none p-1.5 rounded-lg active:bg-rose-50 transition flex items-center justify-center">
               <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
                 <path d="M9 3h6v2H9V3zm-4 3h14v2H5V6zm2 3h10v12H7V9zm2 2v8h2v-8H9zm4 0v8h2v-8h-2z"/>
               </svg>
