@@ -12,7 +12,8 @@
     .rotate-y-180 { transform: rotateY(180deg); }
     .learn-card-content { transition: transform 0.25s ease-out; }
     .swipe-content { transition: transform 0.2s ease-out; }
-    .dragging { opacity: 0.5; transform: scale(0.98); }
+    .drag-active { opacity: 0.9; transform: scale(1.03); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); z-index: 50; }
+    .drag-placeholder { border: 2px dashed #93c5fd; background-color: #eff6ff; border-radius: 1rem; }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8 flex justify-center items-start pb-28 select-none">
@@ -88,8 +89,9 @@
             
             <!-- 正面 -->
             <div class="absolute inset-0 bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden">
-              <div class="w-full flex justify-start items-center text-[11px] font-bold text-slate-400">
+              <div class="w-full flex justify-between items-center text-[11px] font-bold text-slate-400">
                 <span id="learn-card-pos" class="bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full">n.</span>
+                <span id="learn-card-star-badge" class="text-amber-500 text-sm">★</span>
               </div>
 
               <div class="text-center my-auto flex flex-col items-center">
@@ -140,7 +142,7 @@
         </div>
       </div>
 
-      <div id="word-list-container" class="space-y-3 mb-6"></div>
+      <div id="word-list-container" class="space-y-3 mb-6 relative"></div>
 
       <div id="empty-list-state" class="hidden text-center py-16 text-slate-400">
         <p class="text-base font-semibold">此單字集目前沒有單字</p>
@@ -474,9 +476,9 @@
           lastReviewed: null,
           nextReview: new Date().toISOString().split("T")[0],
           cards: [
-            { id: "c1", word: "passivation", pos: "n.", phonetic: "/ˌpæs.əˈveɪ.ʃən/", def: "鈍化；鈍化作用", note: "The passivation layer reduces dark current.", status: "hard", createdAt: 1 },
-            { id: "c2", word: "persistent", pos: "adj.", phonetic: "/pərˈsɪs.tənt/", def: "堅持不懈的；持續的", note: "", status: "easy", createdAt: 2 },
-            { id: "c3", word: "aesthetic", pos: "adj.", phonetic: "/esˈθet̬.ɪk/", def: "美學的；審美的", note: "", status: "medium", createdAt: 3 }
+            { id: "c1", word: "passivation", pos: "n.", phonetic: "/ˌpæs.əˈveɪ.ʃən/", def: "鈍化；鈍化作用", note: "The passivation layer reduces dark current.", starred: true, status: "hard", createdAt: 1 },
+            { id: "c2", word: "persistent", pos: "adj.", phonetic: "/pərˈsɪs.tənt/", def: "堅持不懈的；持續的", note: "", starred: false, status: "easy", createdAt: 2 },
+            { id: "c3", word: "aesthetic", pos: "adj.", phonetic: "/esˈθet̬.ɪk/", def: "美學的；審美的", note: "", starred: false, status: "medium", createdAt: 3 }
           ]
         }
       }
@@ -786,6 +788,7 @@
       document.getElementById("learn-card-pos").innerText = card.pos || "n.";
       document.getElementById("learn-card-word").innerText = card.word;
       document.getElementById("learn-card-phonetic").innerText = card.phonetic || "";
+      document.getElementById("learn-card-star-badge").innerText = card.starred ? "★" : "";
 
       document.getElementById("learn-card-back-pos").innerText = card.pos || "n.";
       document.getElementById("learn-card-def").innerText = card.def;
@@ -853,6 +856,18 @@
       });
     }
 
+    function toggleStar(e, cardId) {
+      e.stopPropagation();
+      const deck = appData.decks[currentDeckId];
+      const card = deck.cards.find(c => c.id === cardId);
+      if (!card) return;
+
+      card.starred = !card.starred;
+      saveData();
+      renderCardList();
+      renderInlineLearnCard();
+    }
+
     function handleSortChange() {
       renderCardList();
     }
@@ -878,27 +893,24 @@
       emptyState.classList.add("hidden");
 
       let sortedCards = [...deck.cards];
-      if (sortBy === "alpha") {
+      if (sortBy === "custom") {
+        // 自定義排序：有星號的優先排列在前面
+        sortedCards.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
+      } else if (sortBy === "alpha") {
         sortedCards.sort((a, b) => a.word.localeCompare(b.word));
       } else if (sortBy === "time") {
         sortedCards.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       }
-      // 'custom' 保持原陣列順序
 
       if (!sortAscending && sortBy !== "custom") sortedCards.reverse();
 
       sortedCards.forEach((c, index) => {
         const wrapper = document.createElement("div");
-        wrapper.className = "relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
+        wrapper.className = "card-row-wrapper relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition-all duration-200";
         wrapper.dataset.id = c.id;
-        wrapper.dataset.index = index;
-
-        if (sortBy === "custom") {
-          wrapper.draggable = true;
-        }
 
         wrapper.innerHTML = `
-          <!-- 左滑出的按鈕群 (純文字無 Emoji) -->
+          <!-- 左滑出的按鈕群 -->
           <div class="absolute inset-y-0 right-0 flex items-stretch">
             <button onclick="openEditCardModal('${c.id}')" class="px-5 bg-amber-500 text-white text-xs font-bold flex items-center justify-center hover:bg-amber-600 transition">
               編輯
@@ -908,9 +920,14 @@
             </button>
           </div>
 
-          <!-- 卡片內容 (詞性與中文在同一行) -->
+          <!-- 卡片本體 -->
           <div id="swipe-item-${c.id}" class="swipe-content relative bg-slate-50 p-4 flex items-center justify-between gap-3 cursor-grab">
-            <div class="flex-1">
+            <!-- 星號按鈕 -->
+            <button onclick="toggleStar(event, '${c.id}')" class="text-xl p-1 text-slate-300 hover:text-amber-400 transition shrink-0">
+              ${c.starred ? '<span class="text-amber-400 font-bold">★</span>' : '☆'}
+            </button>
+
+            <div class="flex-1 pointer-events-none">
               <div class="flex items-center gap-2 mb-1">
                 <h4 class="font-black text-slate-800 text-base">${c.word}</h4>
                 <span class="text-xs text-slate-400 font-medium">${c.phonetic || ''}</span>
@@ -921,6 +938,7 @@
               </div>
               ${c.note ? `<p class="text-xs text-slate-400 mt-1 italic">${c.note}</p>` : ''}
             </div>
+
             <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition flex items-center justify-center shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
             </button>
@@ -928,96 +946,132 @@
         `;
 
         listContainer.appendChild(wrapper);
-        setupCardSwipe(wrapper.querySelector(`#swipe-item-${c.id}`));
+        setupCardTouchInteraction(wrapper, wrapper.querySelector(`#swipe-item-${c.id}`), sortBy === "custom");
       });
-
-      if (sortBy === "custom") {
-        setupDragAndDrop(listContainer);
-      }
     }
 
-    // 左滑手勢處理 (向左滑動展開編輯/刪除)
-    function setupCardSwipe(el) {
-      let startX = 0, currentX = 0, isSwiping = false;
+    // ================= 手機端/電腦端 觸控滑動與長按拖曳排序 =================
+    function setupCardTouchInteraction(wrapper, swipeItem, isCustomSort) {
+      let startX = 0, startY = 0, currentX = 0, currentY = 0;
+      let isHorizontalSwipe = false;
+      let isDragging = false;
+      let dragTimer = null;
+      let placeholder = null;
 
       function handleTouchStart(e) {
-        startX = e.touches ? e.touches[0].clientX : e.clientX;
-        isSwiping = true;
+        const touch = e.touches ? e.touches[0] : e;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        currentX = startX;
+        currentY = startY;
+        isHorizontalSwipe = false;
+        isDragging = false;
+
+        // 當處於「自定義」排序模式時，長按 350ms 觸發拖曳
+        if (isCustomSort) {
+          dragTimer = setTimeout(() => {
+            if (Math.abs(currentX - startX) < 15 && Math.abs(currentY - startY) < 15) {
+              isDragging = true;
+              if (navigator.vibrate) navigator.vibrate(40);
+
+              placeholder = document.createElement("div");
+              placeholder.className = "drag-placeholder h-20 mb-3";
+              wrapper.parentElement.insertBefore(placeholder, wrapper);
+
+              wrapper.classList.add("drag-active", "fixed");
+              wrapper.style.width = `${placeholder.offsetWidth}px`;
+              wrapper.style.left = `${placeholder.getBoundingClientRect().left}px`;
+              wrapper.style.top = `${startY - 40}px`;
+            }
+          }, 350);
+        }
       }
+
       function handleTouchMove(e) {
-        if (!isSwiping) return;
-        currentX = e.touches ? e.touches[0].clientX : e.clientX;
-        const diff = currentX - startX;
-        if (diff < 0 && diff > -140) {
-          el.style.transform = `translateX(${diff}px)`;
+        const touch = e.touches ? e.touches[0] : e;
+        currentX = touch.clientX;
+        currentY = touch.clientY;
+        const diffX = currentX - startX;
+        const diffY = currentY - startY;
+
+        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+          if (!isDragging && dragTimer) clearTimeout(dragTimer);
+        }
+
+        // 正在拖曳狀態
+        if (isDragging) {
+          if (e.cancelable) e.preventDefault();
+          wrapper.style.top = `${currentY - 40}px`;
+
+          const container = wrapper.parentElement;
+          const siblings = [...container.querySelectorAll(".card-row-wrapper:not(.drag-active)")];
+          const nextSibling = siblings.find(sib => {
+            const rect = sib.getBoundingClientRect();
+            return currentY < rect.top + rect.height / 2;
+          });
+
+          if (nextSibling) {
+            container.insertBefore(placeholder, nextSibling);
+          } else {
+            container.appendChild(placeholder);
+          }
+          return;
+        }
+
+        // 左滑展開編輯/刪除按鈕
+        if (!isDragging && Math.abs(diffX) > Math.abs(diffY) && diffX < 0) {
+          isHorizontalSwipe = true;
+          if (diffX < 0 && diffX > -150) {
+            swipeItem.style.transform = `translateX(${diffX}px)`;
+          }
         }
       }
+
       function handleTouchEnd() {
-        if (!isSwiping) return;
-        isSwiping = false;
-        const diff = currentX - startX;
-        if (diff < -50) {
-          el.style.transform = "translateX(-130px)";
-        } else {
-          el.style.transform = "translateX(0px)";
-        }
-      }
+        if (dragTimer) clearTimeout(dragTimer);
 
-      el.addEventListener("touchstart", handleTouchStart, { passive: true });
-      el.addEventListener("touchmove", handleTouchMove, { passive: true });
-      el.addEventListener("touchend", handleTouchEnd);
+        if (isDragging) {
+          isDragging = false;
+          wrapper.classList.remove("drag-active", "fixed");
+          wrapper.style.width = "";
+          wrapper.style.left = "";
+          wrapper.style.top = "";
 
-      el.addEventListener("mousedown", handleTouchStart);
-      window.addEventListener("mousemove", (e) => { if(isSwiping) handleTouchMove(e); });
-      window.addEventListener("mouseup", handleTouchEnd);
-    }
+          const container = wrapper.parentElement;
+          if (placeholder && placeholder.parentNode) {
+            container.insertBefore(wrapper, placeholder);
+            placeholder.remove();
+          }
 
-    // 自定義長按拖曳排序功能 (Drag & Drop)
-    function setupDragAndDrop(container) {
-      let draggedItem = null;
+          // 重新抓取拖曳後的順序並永久儲存
+          const currentIds = Array.from(container.children)
+            .filter(el => el.classList.contains("card-row-wrapper"))
+            .map(child => child.dataset.id);
 
-      container.querySelectorAll(".swipe-content").forEach(item => {
-        const wrapper = item.parentElement;
-
-        wrapper.addEventListener("dragstart", (e) => {
-          draggedItem = wrapper;
-          setTimeout(() => wrapper.classList.add("dragging"), 0);
-        });
-
-        wrapper.addEventListener("dragend", () => {
-          wrapper.classList.remove("dragging");
-          draggedItem = null;
-          // 重新抓取目前順序並儲存
-          const currentIds = Array.from(container.children).map(child => child.dataset.id);
           const deck = appData.decks[currentDeckId];
           deck.cards.sort((a, b) => currentIds.indexOf(a.id) - currentIds.indexOf(b.id));
           saveData();
           renderInlineLearnCard();
-        });
-
-        wrapper.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          const afterElement = getDragAfterElement(container, e.clientY);
-          if (afterElement == null) {
-            container.appendChild(draggedItem);
-          } else {
-            container.insertBefore(draggedItem, afterElement);
-          }
-        });
-      });
-    }
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
+          return;
         }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
+
+        if (isHorizontalSwipe) {
+          const diffX = currentX - startX;
+          if (diffX < -50) {
+            swipeItem.style.transform = "translateX(-130px)";
+          } else {
+            swipeItem.style.transform = "translateX(0px)";
+          }
+        }
+      }
+
+      swipeItem.addEventListener("touchstart", handleTouchStart, { passive: false });
+      swipeItem.addEventListener("touchmove", handleTouchMove, { passive: false });
+      swipeItem.addEventListener("touchend", handleTouchEnd);
+
+      swipeItem.addEventListener("mousedown", handleTouchStart);
+      window.addEventListener("mousemove", (e) => { if (isDragging || isHorizontalSwipe) handleTouchMove(e); });
+      window.addEventListener("mouseup", handleTouchEnd);
     }
 
     // ================= 單字編輯與刪除 =================
@@ -1145,6 +1199,7 @@
           appData.decks[currentDeckId].cards.push({
             id: "c-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
             word, pos, def, note,
+            starred: false,
             status: undefined,
             createdAt: Date.now()
           });
@@ -1176,7 +1231,9 @@
       session.mode = mode;
       let reviewCards = [...deck.cards];
       const sortBy = document.getElementById("sort-select").value;
-      if (sortBy === "alpha") {
+      if (sortBy === "custom") {
+        reviewCards.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
+      } else if (sortBy === "alpha") {
         reviewCards.sort((a, b) => a.word.localeCompare(b.word));
       } else if (sortBy === "time") {
         reviewCards.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
