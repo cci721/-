@@ -202,7 +202,10 @@
       <div id="standard-review-container" class="w-full min-h-[320px] perspective mb-5 cursor-pointer" onclick="handleCardClick()">
         <div id="review-card" class="relative w-full h-full duration-500 transform-style-3d shadow-md rounded-2xl min-h-[320px]">
           <div class="absolute w-full h-full bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden border-2 border-slate-100">
-            <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
+            <div class="w-full flex justify-between items-center">
+              <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
+              <span id="review-stage-indicator" class="text-[11px] font-bold text-slate-400 bg-slate-200/80 px-2 py-0.5 rounded-full">第一輪</span>
+            </div>
             
             <div class="my-auto text-center w-full">
               <div id="listen-play-btn-box" class="hidden mb-3">
@@ -231,7 +234,10 @@
           </div>
 
           <div class="absolute w-full h-full bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden rotate-y-180" onclick="event.stopPropagation()">
-            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">ANSWER</span>
+            <div class="w-full flex justify-between items-center">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">ANSWER</span>
+              <span id="review-target-hint" class="text-[11px] font-bold text-amber-300"></span>
+            </div>
             
             <div class="my-auto text-center w-full max-w-md overflow-y-auto max-h-44 py-2">
               <div id="user-answer-comparison" class="mb-3 text-xs px-3 py-1.5 rounded-lg inline-block font-semibold"></div>
@@ -252,11 +258,11 @@
               <div class="grid grid-cols-3 gap-2">
                 <button onclick="rateCard('hard')" class="py-2.5 bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">✕</span>
-                  <span>不熟 (重來)</span>
+                  <span>不熟 (+5後)</span>
                 </button>
                 <button onclick="rateCard('medium')" class="py-2.5 bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600 text-amber-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">△</span>
-                  <span>模糊 (再練)</span>
+                  <span>模糊 (+10後)</span>
                 </button>
                 <button onclick="rateCard('easy')" class="py-2.5 bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">○</span>
@@ -413,12 +419,11 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 選擇複習模式 (含隨機出題切換按鈕) -->
+  <!-- 彈窗 6: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-black text-slate-800">選擇複習模式</h3>
-        <!-- 隨機開關按鈕 -->
         <button id="modal-shuffle-btn" onclick="toggleModalShuffle()" title="隨機打亂順序出題" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition flex items-center gap-1 text-xs font-bold border border-slate-200">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
           <span id="modal-shuffle-text">順序出題</span>
@@ -522,7 +527,9 @@
 
     let session = {
       mode: "FLASH_CARD",
-      queue: [],
+      unseenQueue: [],
+      retryQueue: [],
+      currentCardItem: null,
       stats: { totalAnswered: 0, easy: 0, medium: 0, hard: 0, masteredWords: new Set() }
     };
 
@@ -911,7 +918,6 @@
       renderCardList();
     }
 
-    // 取得當前清單顯示的單字排序順序（供複習與渲染共用）
     function getCurrentlySortedCards() {
       const deck = appData.decks[currentDeckId];
       if (!deck || !deck.cards) return [];
@@ -990,11 +996,12 @@
       });
     }
 
-    // ================= 仿手機 App Icon 平滑拖曳與讓位動畫核心 =================
+    // ================= 仿手機 App Icon 平滑拖曳與左滑展開/右滑回復 =================
     function setupSmoothDragAndSwipe(wrapper, swipeItem, isCustomSort) {
       let startX = 0, startY = 0, currentX = 0, currentY = 0;
       let isHorizontalSwipe = false;
       let isDragging = false;
+      let isSwipedOpen = false;
       let dragTimer = null;
       let placeholder = null;
       let initialOffsetTop = 0;
@@ -1027,7 +1034,8 @@
         isHorizontalSwipe = false;
         isDragging = false;
 
-        if (isCustomSort) {
+        // 當處於「自定義」排序且卡片未展開時，長按 300ms 觸發拖曳
+        if (isCustomSort && !isSwipedOpen) {
           dragTimer = setTimeout(() => {
             if (Math.abs(currentX - startX) < 12 && Math.abs(currentY - startY) < 12) {
               isDragging = true;
@@ -1063,6 +1071,7 @@
           if (!isDragging && dragTimer) clearTimeout(dragTimer);
         }
 
+        // 拖曳排序處理
         if (isDragging) {
           if (e.cancelable) e.preventDefault();
           
@@ -1094,10 +1103,19 @@
           return;
         }
 
-        if (!isDragging && Math.abs(diffX) > Math.abs(diffY) && diffX < 0) {
+        // 水平滑動（左滑展開 / 右滑回復）
+        if (!isDragging && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
           isHorizontalSwipe = true;
-          if (diffX < 0 && diffX > -150) {
-            swipeItem.style.transform = `translateX(${diffX}px)`;
+          if (isSwipedOpen) {
+            // 已展開狀態：向右滑動進行推回
+            const moveX = Math.min(0, Math.max(-130, -130 + diffX));
+            swipeItem.style.transform = `translateX(${moveX}px)`;
+          } else {
+            // 未展開狀態：向左滑動展開按鈕
+            if (diffX < 0) {
+              const moveX = Math.max(-140, diffX);
+              swipeItem.style.transform = `translateX(${moveX}px)`;
+            }
           }
         }
       }
@@ -1106,6 +1124,7 @@
         if (dragTimer) clearTimeout(dragTimer);
         stopAutoScroll();
 
+        // 拖曳結束
         if (isDragging) {
           isDragging = false;
           
@@ -1141,12 +1160,25 @@
           return;
         }
 
+        // 滑動結束判定（左滑展開 vs 右滑收合回復）
         if (isHorizontalSwipe) {
           const diffX = currentX - startX;
-          if (diffX < -50) {
-            swipeItem.style.transform = "translateX(-130px)";
+          if (isSwipedOpen) {
+            // 原本已展開：向右滑動超過 35px 即收回回復
+            if (diffX > 35) {
+              swipeItem.style.transform = "translateX(0px)";
+              isSwipedOpen = false;
+            } else {
+              swipeItem.style.transform = "translateX(-130px)";
+            }
           } else {
-            swipeItem.style.transform = "translateX(0px)";
+            // 原本未展開：向左滑動超過 45px 則固定展開
+            if (diffX < -45) {
+              swipeItem.style.transform = "translateX(-130px)";
+              isSwipedOpen = true;
+            } else {
+              swipeItem.style.transform = "translateX(0px)";
+            }
           }
         }
       }
@@ -1327,14 +1359,13 @@
     }
 
     function shuffleCurrentQueue() {
-      if (session.queue.length <= 1) return;
-      
-      // 當前正在作答的第一個單字不動，其餘打亂
-      const current = session.queue[0];
-      const rest = session.queue.slice(1).sort(() => 0.5 - Math.random());
-      session.queue = [current, ...rest];
-
-      alert("已隨機打亂剩餘單字出題順序！");
+      if (session.unseenQueue.length > 1) {
+        session.unseenQueue.sort(() => 0.5 - Math.random());
+      }
+      if (session.retryQueue.length > 1) {
+        session.retryQueue.sort(() => 0.5 - Math.random());
+      }
+      alert("已隨機打亂出題順序！");
     }
 
     function startReview(mode) {
@@ -1344,14 +1375,18 @@
 
       session.mode = mode;
       
-      // 依當前單字清單順序建立題目（isSeen: false 表示尚未練習過）
       let reviewCards = getCurrentlySortedCards();
-
       if (isReviewShuffled) {
         reviewCards.sort(() => 0.5 - Math.random());
       }
 
-      session.queue = reviewCards.map(c => ({ card: c, isSeen: false }));
+      session.unseenQueue = reviewCards.map(c => ({
+        card: c,
+        failCount: 0,
+        consecutiveEasy: 0
+      }));
+      session.retryQueue = [];
+      session.currentCardItem = null;
       session.stats = { totalAnswered: 0, easy: 0, medium: 0, hard: 0, masteredWords: new Set() };
 
       document.getElementById("view-deck-detail").classList.add("hidden");
@@ -1405,14 +1440,29 @@
     }
 
     function renderNextReviewCard() {
-      if (session.queue.length === 0) {
+      if (session.unseenQueue.length > 0) {
+        session.currentCardItem = session.unseenQueue.shift();
+        document.getElementById("review-stage-indicator").innerText = "第一輪";
+      } else if (session.retryQueue.length > 0) {
+        session.currentCardItem = session.retryQueue.shift();
+        document.getElementById("review-stage-indicator").innerText = "加強複習";
+      } else {
+        session.currentCardItem = null;
         showSummaryModal();
         return;
       }
 
-      document.getElementById("review-queue-count").innerText = `待練習: ${session.queue.length}`;
-      const currentItem = session.queue[0];
+      const currentItem = session.currentCardItem;
       const card = currentItem.card;
+      const totalRemaining = session.unseenQueue.length + session.retryQueue.length + 1;
+      document.getElementById("review-queue-count").innerText = `剩餘單字: ${totalRemaining}`;
+
+      const targetHint = document.getElementById("review-target-hint");
+      if (currentItem.failCount > 0) {
+        targetHint.innerText = `需要再熟練 ${2 - currentItem.consecutiveEasy} 次`;
+      } else {
+        targetHint.innerText = `熟練 1 次掌握`;
+      }
 
       document.getElementById("review-pos-badge").innerText = card.pos || "n.";
 
@@ -1562,7 +1612,7 @@
       if (isCardFlipped) return;
       isCardFlipped = true;
 
-      const currentItem = session.queue[0];
+      const currentItem = session.currentCardItem;
       const card = currentItem.card;
       const compBox = document.getElementById("user-answer-comparison");
 
@@ -1593,41 +1643,45 @@
       document.getElementById("review-card").classList.add("rotate-y-180");
     }
 
-    // 核心出題隊列調整：還沒練習的在前面，不熟與模糊擺在最後面隨機打散
     function rateCard(rating) {
-      if (session.queue.length === 0) return;
+      const currentItem = session.currentCardItem;
+      if (!currentItem) return;
 
-      const currentItem = session.queue.shift();
       const card = currentItem.card;
       session.stats.totalAnswered += 1;
       card.status = rating;
-      currentItem.isSeen = true;
 
       if (rating === "hard") {
         session.stats.hard += 1;
-        reorderUnmasteredQueue(currentItem);
+        currentItem.failCount += 1;
+        currentItem.consecutiveEasy = 0;
+        insertIntoRetryQueue(currentItem, 5);
       } else if (rating === "medium") {
         session.stats.medium += 1;
-        reorderUnmasteredQueue(currentItem);
+        currentItem.failCount += 1;
+        currentItem.consecutiveEasy = 0;
+        insertIntoRetryQueue(currentItem, 10);
       } else if (rating === "easy") {
         session.stats.easy += 1;
-        session.stats.masteredWords.add(card.word);
+        currentItem.consecutiveEasy += 1;
+
+        const requiredCount = currentItem.failCount > 0 ? 2 : 1;
+
+        if (currentItem.consecutiveEasy >= requiredCount) {
+          session.stats.masteredWords.add(card.word);
+        } else {
+          insertIntoRetryQueue(currentItem, 5);
+        }
       }
 
       saveData();
       renderNextReviewCard();
     }
 
-    // 將非熟練單字（不熟與模糊）排在還沒練習的單字後面，且非熟練單字間隨機打散
-    function reorderUnmasteredQueue(newItem) {
-      const unseenItems = session.queue.filter(item => !item.isSeen);
-      const seenItems = session.queue.filter(item => item.isSeen);
-
-      seenItems.push(newItem);
-      // 將已經複習過但還不熟的項目在隊列最末端隨機打散
-      seenItems.sort(() => 0.5 - Math.random());
-
-      session.queue = [...unseenItems, ...seenItems];
+    function insertIntoRetryQueue(item, offset) {
+      const queue = session.retryQueue;
+      const insertPos = Math.min(offset, queue.length);
+      queue.splice(insertPos, 0, item);
     }
 
     function exitReviewPrompt() {
@@ -1671,7 +1725,7 @@
     }
 
     function speakAnswerWord() {
-      const card = session.queue[0]?.card;
+      const card = session.currentCardItem?.card;
       if (card) speakText(card.word);
     }
 
