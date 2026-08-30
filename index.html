@@ -183,6 +183,7 @@
           <span id="review-queue-count" class="text-sm font-bold text-blue-600">剩餘單字: 0</span>
         </div>
         <div class="flex items-center gap-2">
+          <!-- 複習進行中的隨機打亂按鈕 -->
           <button onclick="shuffleCurrentQueue()" title="隨機打亂出題順序" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center justify-center">
             <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
           </button>
@@ -248,6 +249,7 @@
               <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
               <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
               
+              <!-- 純喇叭發音按鈕 -->
               <button onclick="speakAnswerWord()" class="mt-2.5 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-blue-300 transition flex items-center justify-center mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
               </button>
@@ -606,7 +608,7 @@
       setupLearnCardSwipe();
     }
 
-    // ================= 視圖 1: 首頁 =================
+    // ================= 視圖 1: 首頁 (已簡化單字集卡片) =================
     function renderHomeScreen() {
       document.getElementById("view-home").classList.remove("hidden");
       document.getElementById("view-deck-detail").classList.add("hidden");
@@ -664,16 +666,16 @@
 
       decks.forEach(deck => {
         const isDue = !deck.nextReview || deck.nextReview <= today;
-        const reviewCount = deck.reviewCount || deck.level || 0;
         const deckCard = document.createElement("div");
-        deckCard.className = "bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer flex flex-col justify-between h-36 relative group";
+        // 移除 h-36 與底部字樣，改為高度自適應之簡約卡片
+        deckCard.className = "bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer relative group";
         deckCard.onclick = () => openDeckDetail(deck.id);
 
         deckCard.innerHTML = `
           <div>
-            <div class="flex justify-between items-start mb-1">
+            <div class="flex justify-between items-start mb-1.5">
               <h4 class="font-black text-slate-800 text-base truncate max-w-[140px]">${deck.name}</h4>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1.5">
                 ${isDue 
                   ? `<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">待複習</span>`
                   : `<span class="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">已複習</span>`
@@ -684,10 +686,6 @@
               </div>
             </div>
             <p class="text-xs text-slate-400 font-medium">${deck.cards.length} 個單字</p>
-          </div>
-          <div class="flex justify-between items-center text-[11px] text-slate-400 pt-2 border-t border-slate-100 font-medium">
-            <span>複習 ${reviewCount} 次</span>
-            <span class="text-blue-600 font-bold">進入學習 ➔</span>
           </div>
         `;
         gridEl.appendChild(deckCard);
@@ -1687,11 +1685,9 @@
         const deck = appData.decks[currentDeckId];
         const todayStr = new Date().toISOString().split("T")[0];
 
-        // 檢查今天是否已經完成過複習
         const alreadyReviewedToday = (deck.lastReviewed === todayStr);
 
         if (!alreadyReviewedToday) {
-          // 今天第一次完成複習：階段數 +1，並根據遺忘曲線推算下次複習日
           const currentCount = deck.reviewCount || 0;
           const intervalDays = SRS_INTERVALS[Math.min(currentCount, SRS_INTERVALS.length - 1)];
           
@@ -1703,7 +1699,6 @@
           deck.lastReviewed = todayStr;
           deck.nextReview = nextDate.toISOString().split("T")[0];
         } else {
-          // 同一天重複複習：只記錄最後複習時間，不累加階段、不推遲下次複習日
           deck.lastReviewed = todayStr;
         }
 
