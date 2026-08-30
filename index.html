@@ -82,6 +82,7 @@
         </div>
       </div>
 
+      <!-- 狀態橫幅 -->
       <div id="deck-status-banner" class="mb-5 p-4 rounded-2xl flex items-center justify-between transition"></div>
 
       <!-- 嵌入式學習單字卡區塊 -->
@@ -182,7 +183,6 @@
           <span id="review-queue-count" class="text-sm font-bold text-blue-600">剩餘單字: 0</span>
         </div>
         <div class="flex items-center gap-2">
-          <!-- 複習進行中的隨機打亂按鈕 -->
           <button onclick="shuffleCurrentQueue()" title="隨機打亂出題順序" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center justify-center">
             <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
           </button>
@@ -201,10 +201,10 @@
 
       <div id="standard-review-container" class="w-full min-h-[320px] perspective mb-5 cursor-pointer" onclick="handleCardClick()">
         <div id="review-card" class="relative w-full h-full duration-500 transform-style-3d shadow-md rounded-2xl min-h-[320px]">
+          <!-- 正面 -->
           <div class="absolute w-full h-full bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden border-2 border-slate-100">
-            <div class="w-full flex justify-between items-center">
-              <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">PROMPT</span>
-              <span id="review-stage-indicator" class="text-[11px] font-bold text-slate-400 bg-slate-200/80 px-2 py-0.5 rounded-full">第一輪</span>
+            <div class="w-full flex justify-center items-center">
+              <span id="review-prompt-type" class="text-xs text-blue-500 font-bold uppercase tracking-wider">請回想中文</span>
             </div>
             
             <div class="my-auto text-center w-full">
@@ -229,14 +229,14 @@
             </div>
 
             <div class="text-xs text-slate-400 font-medium">
-              <span id="flip-hint-text">點擊卡片或按 Enter 翻面看解答 ➔</span>
+              <span id="flip-hint-text">點擊翻面 ➔</span>
             </div>
           </div>
 
+          <!-- 背面 -->
           <div class="absolute w-full h-full bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-6 backface-hidden rotate-y-180" onclick="event.stopPropagation()">
-            <div class="w-full flex justify-between items-center">
+            <div class="w-full flex justify-center items-center">
               <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">ANSWER</span>
-              <span id="review-target-hint" class="text-[11px] font-bold text-amber-300"></span>
             </div>
             
             <div class="my-auto text-center w-full max-w-md overflow-y-auto max-h-44 py-2">
@@ -247,26 +247,25 @@
               </div>
               <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
               <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
-              <button onclick="speakAnswerWord()" class="mt-2 text-xs bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 rounded-full text-blue-300 font-medium transition flex items-center justify-center gap-1.5 mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                <span>聽發音</span>
+              
+              <button onclick="speakAnswerWord()" class="mt-2.5 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-blue-300 transition flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
               </button>
             </div>
 
             <div class="w-full">
-              <p class="text-center text-xs text-slate-400 mb-2 font-medium">熟練度選擇 (數字鍵 1, 2, 3)：</p>
               <div class="grid grid-cols-3 gap-2">
                 <button onclick="rateCard('hard')" class="py-2.5 bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">✕</span>
-                  <span>不熟 (+5後)</span>
+                  <span>不熟</span>
                 </button>
                 <button onclick="rateCard('medium')" class="py-2.5 bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600 text-amber-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">△</span>
-                  <span>模糊 (+10後)</span>
+                  <span>模糊</span>
                 </button>
                 <button onclick="rateCard('easy')" class="py-2.5 bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-xl text-xs font-bold transition flex flex-col items-center gap-0.5">
                   <span class="text-base">○</span>
-                  <span>熟練 (掌握)</span>
+                  <span>熟練</span>
                 </button>
               </div>
             </div>
@@ -493,7 +492,8 @@
   </div>
 
   <script>
-    const SRS_INTERVALS = [1, 2, 4, 7, 15, 30];
+    // 遺忘曲線間隔天數: 1, 4, 7, 14, 30
+    const SRS_INTERVALS = [1, 4, 7, 14, 30];
     const STORAGE_KEY = "vocab_app_data_v3";
 
     let rawSaved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("vocab_app_data_v2") || localStorage.getItem("vocab_app_data");
@@ -797,14 +797,24 @@
           <span class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg">待複習</span>
         `;
       } else {
+        // 計算倒數天數 (n) 與預計複習的遺忘曲線週期 (m)
         const diffDays = Math.ceil((new Date(nextDate) - new Date(today)) / (1000 * 60 * 60 * 24));
+        const currentCount = deck.reviewCount || deck.level || 0;
+        const targetInterval = SRS_INTERVALS[Math.min(currentCount - 1 >= 0 ? currentCount - 1 : 0, SRS_INTERVALS.length - 1)];
+        
+        // 格式化 mm/dd
+        const dateParts = nextDate.split("-");
+        const mmdd = `${dateParts[1]}/${dateParts[2]}`;
+
         banner.className = "mb-5 p-4 rounded-2xl flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-900";
         banner.innerHTML = `
           <div>
-            <p class="font-bold text-sm">🎉 記憶狀態良好</p>
-            <p class="text-xs text-emerald-700 mt-0.5">預計於 <b>${nextDate}</b>（${diffDays} 天後）進行下次複習</p>
+            <p class="font-bold text-sm flex items-center gap-1.5">
+              <span>🎉 記憶狀態良好</span>
+            </p>
+            <p class="text-xs text-emerald-700 mt-0.5">預計 <b>${diffDays}</b> 天後 <b>${mmdd}</b> 進行第 <b>${targetInterval}</b> 天複習</p>
           </div>
-          <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">已複習</span>
+          <span class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-1 rounded-lg shrink-0">已複習</span>
         `;
       }
     }
@@ -1034,7 +1044,6 @@
         isHorizontalSwipe = false;
         isDragging = false;
 
-        // 當處於「自定義」排序且卡片未展開時，長按 300ms 觸發拖曳
         if (isCustomSort && !isSwipedOpen) {
           dragTimer = setTimeout(() => {
             if (Math.abs(currentX - startX) < 12 && Math.abs(currentY - startY) < 12) {
@@ -1071,7 +1080,6 @@
           if (!isDragging && dragTimer) clearTimeout(dragTimer);
         }
 
-        // 拖曳排序處理
         if (isDragging) {
           if (e.cancelable) e.preventDefault();
           
@@ -1103,15 +1111,12 @@
           return;
         }
 
-        // 水平滑動（左滑展開 / 右滑回復）
         if (!isDragging && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
           isHorizontalSwipe = true;
           if (isSwipedOpen) {
-            // 已展開狀態：向右滑動進行推回
             const moveX = Math.min(0, Math.max(-130, -130 + diffX));
             swipeItem.style.transform = `translateX(${moveX}px)`;
           } else {
-            // 未展開狀態：向左滑動展開按鈕
             if (diffX < 0) {
               const moveX = Math.max(-140, diffX);
               swipeItem.style.transform = `translateX(${moveX}px)`;
@@ -1124,7 +1129,6 @@
         if (dragTimer) clearTimeout(dragTimer);
         stopAutoScroll();
 
-        // 拖曳結束
         if (isDragging) {
           isDragging = false;
           
@@ -1160,11 +1164,9 @@
           return;
         }
 
-        // 滑動結束判定（左滑展開 vs 右滑收合回復）
         if (isHorizontalSwipe) {
           const diffX = currentX - startX;
           if (isSwipedOpen) {
-            // 原本已展開：向右滑動超過 35px 即收回回復
             if (diffX > 35) {
               swipeItem.style.transform = "translateX(0px)";
               isSwipedOpen = false;
@@ -1172,7 +1174,6 @@
               swipeItem.style.transform = "translateX(-130px)";
             }
           } else {
-            // 原本未展開：向左滑動超過 45px 則固定展開
             if (diffX < -45) {
               swipeItem.style.transform = "translateX(-130px)";
               isSwipedOpen = true;
@@ -1407,7 +1408,7 @@
       listenBtnBox.classList.add("hidden");
 
       if (mode === "FLASH_CARD") {
-        flipHint.innerText = "點擊卡片或按空白鍵翻面 ➔";
+        flipHint.innerText = "點擊翻面 ➔";
         modeBadge.innerText = "⚡單字卡";
         renderNextReviewCard();
       } else if (mode === "CHOICE") {
@@ -1442,10 +1443,8 @@
     function renderNextReviewCard() {
       if (session.unseenQueue.length > 0) {
         session.currentCardItem = session.unseenQueue.shift();
-        document.getElementById("review-stage-indicator").innerText = "第一輪";
       } else if (session.retryQueue.length > 0) {
         session.currentCardItem = session.retryQueue.shift();
-        document.getElementById("review-stage-indicator").innerText = "加強複習";
       } else {
         session.currentCardItem = null;
         showSummaryModal();
@@ -1457,31 +1456,24 @@
       const totalRemaining = session.unseenQueue.length + session.retryQueue.length + 1;
       document.getElementById("review-queue-count").innerText = `剩餘單字: ${totalRemaining}`;
 
-      const targetHint = document.getElementById("review-target-hint");
-      if (currentItem.failCount > 0) {
-        targetHint.innerText = `需要再熟練 ${2 - currentItem.consecutiveEasy} 次`;
-      } else {
-        targetHint.innerText = `熟練 1 次掌握`;
-      }
-
       document.getElementById("review-pos-badge").innerText = card.pos || "n.";
 
       if (session.mode === "ZH_TO_EN") {
-        document.getElementById("review-prompt-type").innerText = "中文 ➔ 請拼寫英文";
+        document.getElementById("review-prompt-type").innerText = "請拼寫英文";
         document.getElementById("review-question").innerText = card.def;
         document.getElementById("review-phonetic-hint").innerText = card.phonetic ? `音標提示: ${card.phonetic}` : "";
       } else if (session.mode === "LISTEN_SPELL") {
-        document.getElementById("review-prompt-type").innerText = "聽發音 ➔ 請拼寫英文";
+        document.getElementById("review-prompt-type").innerText = "請拼寫英文";
         document.getElementById("review-question").innerText = "🎧 請聽發音";
         document.getElementById("review-phonetic-hint").innerText = card.phonetic ? `音標提示: ${card.phonetic}` : "";
         speakAnswerWord();
       } else if (session.mode === "CHOICE") {
-        document.getElementById("review-prompt-type").innerText = "選擇題 ➔ 請選出正確字義";
+        document.getElementById("review-prompt-type").innerText = "請選出正確字義";
         document.getElementById("review-question").innerText = card.word;
         document.getElementById("review-phonetic-hint").innerText = card.phonetic || "";
         renderChoiceButtons(card);
       } else {
-        document.getElementById("review-prompt-type").innerText = "英文 ➔ 請回想中文";
+        document.getElementById("review-prompt-type").innerText = "請回想中文";
         document.getElementById("review-question").innerText = card.word;
         document.getElementById("review-phonetic-hint").innerText = card.phonetic || "";
       }
