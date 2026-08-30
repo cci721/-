@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>背單字</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -12,8 +12,26 @@
     .rotate-y-180 { transform: rotateY(180deg); }
     .learn-card-content { transition: transform 0.25s ease-out; }
     .swipe-content { transition: transform 0.2s ease-out; }
-    .drag-active { opacity: 0.9; transform: scale(1.03); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); z-index: 50; }
-    .drag-placeholder { border: 2px dashed #93c5fd; background-color: #eff6ff; border-radius: 1rem; }
+    
+    /* 仿手機 App Icon 懸浮與佔位樣式 */
+    .card-row-wrapper {
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
+      touch-action: pan-y;
+    }
+    .drag-active {
+      opacity: 0.95;
+      transform: scale(1.04) !important;
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      z-index: 999 !important;
+      pointer-events: none;
+      transition: none !important;
+    }
+    .drag-placeholder {
+      background-color: #f1f5f9;
+      border: 2px dashed #94a3b8;
+      border-radius: 1rem;
+      transition: all 0.2s ease;
+    }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8 flex justify-center items-start pb-28 select-none">
@@ -894,7 +912,6 @@
 
       let sortedCards = [...deck.cards];
       if (sortBy === "custom") {
-        // 自定義排序：有星號的優先排列在前面
         sortedCards.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
       } else if (sortBy === "alpha") {
         sortedCards.sort((a, b) => a.word.localeCompare(b.word));
@@ -904,9 +921,9 @@
 
       if (!sortAscending && sortBy !== "custom") sortedCards.reverse();
 
-      sortedCards.forEach((c, index) => {
+      sortedCards.forEach((c) => {
         const wrapper = document.createElement("div");
-        wrapper.className = "card-row-wrapper relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition-all duration-200";
+        wrapper.className = "card-row-wrapper relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
         wrapper.dataset.id = c.id;
 
         wrapper.innerHTML = `
@@ -946,17 +963,37 @@
         `;
 
         listContainer.appendChild(wrapper);
-        setupCardTouchInteraction(wrapper, wrapper.querySelector(`#swipe-item-${c.id}`), sortBy === "custom");
+        setupSmoothDragAndSwipe(wrapper, wrapper.querySelector(`#swipe-item-${c.id}`), sortBy === "custom");
       });
     }
 
-    // ================= 手機端/電腦端 觸控滑動與長按拖曳排序 =================
-    function setupCardTouchInteraction(wrapper, swipeItem, isCustomSort) {
+    // ================= 仿手機 App Icon 平滑拖曳與讓位動畫核心 =================
+    function setupSmoothDragAndSwipe(wrapper, swipeItem, isCustomSort) {
       let startX = 0, startY = 0, currentX = 0, currentY = 0;
       let isHorizontalSwipe = false;
       let isDragging = false;
       let dragTimer = null;
       let placeholder = null;
+      let initialOffsetTop = 0;
+      let autoScrollSpeed = 0;
+      let autoScrollTimer = null;
+
+      function startAutoScroll() {
+        if (autoScrollTimer) return;
+        autoScrollTimer = setInterval(() => {
+          if (autoScrollSpeed !== 0) {
+            window.scrollBy(0, autoScrollSpeed);
+          }
+        }, 16);
+      }
+
+      function stopAutoScroll() {
+        if (autoScrollTimer) {
+          clearInterval(autoScrollTimer);
+          autoScrollTimer = null;
+          autoScrollSpeed = 0;
+        }
+      }
 
       function handleTouchStart(e) {
         const touch = e.touches ? e.touches[0] : e;
@@ -967,23 +1004,30 @@
         isHorizontalSwipe = false;
         isDragging = false;
 
-        // 當處於「自定義」排序模式時，長按 350ms 觸發拖曳
         if (isCustomSort) {
           dragTimer = setTimeout(() => {
-            if (Math.abs(currentX - startX) < 15 && Math.abs(currentY - startY) < 15) {
+            if (Math.abs(currentX - startX) < 12 && Math.abs(currentY - startY) < 12) {
               isDragging = true;
-              if (navigator.vibrate) navigator.vibrate(40);
+              if (navigator.vibrate) navigator.vibrate(30);
 
+              const rect = wrapper.getBoundingClientRect();
+              initialOffsetTop = touch.clientY - rect.top;
+
+              // 建立佔位元素
               placeholder = document.createElement("div");
-              placeholder.className = "drag-placeholder h-20 mb-3";
+              placeholder.className = "drag-placeholder mb-3";
+              placeholder.style.height = `${rect.height}px`;
               wrapper.parentElement.insertBefore(placeholder, wrapper);
 
+              // 懸浮樣式
               wrapper.classList.add("drag-active", "fixed");
-              wrapper.style.width = `${placeholder.offsetWidth}px`;
-              wrapper.style.left = `${placeholder.getBoundingClientRect().left}px`;
-              wrapper.style.top = `${startY - 40}px`;
+              wrapper.style.width = `${rect.width}px`;
+              wrapper.style.left = `${rect.left}px`;
+              wrapper.style.top = `${rect.top}px`;
+
+              startAutoScroll();
             }
-          }, 350);
+          }, 300);
         }
       }
 
@@ -994,31 +1038,47 @@
         const diffX = currentX - startX;
         const diffY = currentY - startY;
 
-        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+        if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
           if (!isDragging && dragTimer) clearTimeout(dragTimer);
         }
 
-        // 正在拖曳狀態
+        // 處於拖曳狀態
         if (isDragging) {
           if (e.cancelable) e.preventDefault();
-          wrapper.style.top = `${currentY - 40}px`;
+          
+          const newTop = touch.clientY - initialOffsetTop;
+          wrapper.style.top = `${newTop}px`;
 
+          // 邊界自動滾動判定
+          const edgeThreshold = 100;
+          if (touch.clientY < edgeThreshold) {
+            autoScrollSpeed = -Math.min(15, (edgeThreshold - touch.clientY) / 4);
+          } else if (touch.clientY > window.innerHeight - edgeThreshold) {
+            autoScrollSpeed = Math.min(15, (touch.clientY - (window.innerHeight - edgeThreshold)) / 4);
+          } else {
+            autoScrollSpeed = 0;
+          }
+
+          // FLIP 動畫重排與即時讓位
           const container = wrapper.parentElement;
-          const siblings = [...container.querySelectorAll(".card-row-wrapper:not(.drag-active)")];
-          const nextSibling = siblings.find(sib => {
-            const rect = sib.getBoundingClientRect();
-            return currentY < rect.top + rect.height / 2;
+          const items = [...container.querySelectorAll(".card-row-wrapper:not(.drag-active)")];
+          
+          const targetItem = items.find(item => {
+            const r = item.getBoundingClientRect();
+            return touch.clientY > r.top && touch.clientY < r.bottom;
           });
 
-          if (nextSibling) {
-            container.insertBefore(placeholder, nextSibling);
-          } else {
-            container.appendChild(placeholder);
+          if (targetItem && targetItem !== placeholder) {
+            const rect = targetItem.getBoundingClientRect();
+            const isAfter = touch.clientY > rect.top + rect.height / 2;
+            
+            // 觸發平滑動畫
+            container.insertBefore(placeholder, isAfter ? targetItem.nextSibling : targetItem);
           }
           return;
         }
 
-        // 左滑展開編輯/刪除按鈕
+        // 左滑展開編輯與刪除
         if (!isDragging && Math.abs(diffX) > Math.abs(diffY) && diffX < 0) {
           isHorizontalSwipe = true;
           if (diffX < 0 && diffX > -150) {
@@ -1029,29 +1089,42 @@
 
       function handleTouchEnd() {
         if (dragTimer) clearTimeout(dragTimer);
+        stopAutoScroll();
 
         if (isDragging) {
           isDragging = false;
-          wrapper.classList.remove("drag-active", "fixed");
-          wrapper.style.width = "";
-          wrapper.style.left = "";
-          wrapper.style.top = "";
-
-          const container = wrapper.parentElement;
+          
+          // 平順歸位動畫
           if (placeholder && placeholder.parentNode) {
-            container.insertBefore(wrapper, placeholder);
-            placeholder.remove();
+            const pRect = placeholder.getBoundingClientRect();
+            wrapper.style.transition = "all 0.2s cubic-bezier(0.2, 0, 0, 1)";
+            wrapper.style.top = `${pRect.top}px`;
+            wrapper.style.left = `${pRect.left}px`;
+            wrapper.style.transform = "scale(1)";
+
+            setTimeout(() => {
+              wrapper.classList.remove("drag-active", "fixed");
+              wrapper.style.transition = "";
+              wrapper.style.width = "";
+              wrapper.style.left = "";
+              wrapper.style.top = "";
+              wrapper.style.transform = "";
+
+              const container = wrapper.parentElement;
+              container.insertBefore(wrapper, placeholder);
+              placeholder.remove();
+
+              // 儲存重排後的最新順序
+              const currentIds = Array.from(container.children)
+                .filter(el => el.classList.contains("card-row-wrapper"))
+                .map(child => child.dataset.id);
+
+              const deck = appData.decks[currentDeckId];
+              deck.cards.sort((a, b) => currentIds.indexOf(a.id) - currentIds.indexOf(b.id));
+              saveData();
+              renderInlineLearnCard();
+            }, 200);
           }
-
-          // 重新抓取拖曳後的順序並永久儲存
-          const currentIds = Array.from(container.children)
-            .filter(el => el.classList.contains("card-row-wrapper"))
-            .map(child => child.dataset.id);
-
-          const deck = appData.decks[currentDeckId];
-          deck.cards.sort((a, b) => currentIds.indexOf(a.id) - currentIds.indexOf(b.id));
-          saveData();
-          renderInlineLearnCard();
           return;
         }
 
