@@ -11,6 +11,8 @@
     .backface-hidden { backface-visibility: hidden; }
     .rotate-y-180 { transform: rotateY(180deg); }
     .learn-card-content { transition: transform 0.25s ease-out; }
+    .swipe-content { transition: transform 0.2s ease-out; }
+    .dragging { opacity: 0.5; transform: scale(0.98); }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8 flex justify-center items-start pb-28 select-none">
@@ -64,7 +66,7 @@
 
       <div id="deck-status-banner" class="mb-5 p-4 rounded-2xl flex items-center justify-between transition"></div>
 
-      <!-- 嵌入式學習單字卡區塊 (純手勢左右滑動切換、點擊翻轉) -->
+      <!-- 嵌入式學習單字卡區塊 -->
       <div id="inline-learning-section" class="mb-8 hidden">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-black text-slate-500 flex items-center gap-1">
@@ -84,7 +86,7 @@
         <div class="w-full h-56 perspective cursor-pointer" id="learn-card-box" onclick="flipLearnCard()">
           <div id="learn-card-inner" class="learn-card-content relative w-full h-full duration-500 transform-style-3d rounded-2xl shadow-sm border border-slate-200/90">
             
-            <!-- 正面 (英文面，單字下方設有喇叭按鈕) -->
+            <!-- 正面 -->
             <div class="absolute inset-0 bg-slate-50 rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden">
               <div class="w-full flex justify-start items-center text-[11px] font-bold text-slate-400">
                 <span id="learn-card-pos" class="bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded-full">n.</span>
@@ -101,7 +103,7 @@
               <div></div>
             </div>
 
-            <!-- 背面 (中文釋義與補充說明) -->
+            <!-- 背面 -->
             <div class="absolute inset-0 bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-between p-5 backface-hidden rotate-y-180">
               <div class="w-full flex justify-start items-center text-[11px] font-bold text-slate-400">
                 <span id="learn-card-back-pos" class="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">n.</span>
@@ -122,13 +124,13 @@
       <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <h2 id="deck-detail-title" class="text-2xl font-black text-slate-800">單字集名稱</h2>
-          <p id="deck-detail-count" class="text-xs text-slate-400 font-semibold mt-0.5">共 0 個單字 (長按單字可編輯或刪除)</p>
+          <p id="deck-detail-count" class="text-xs text-slate-400 font-semibold mt-0.5">共 0 個單字</p>
         </div>
         
         <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
           <span class="text-xs font-bold text-slate-400 ml-1">排序：</span>
-          <select id="sort-select" onchange="renderCardList()" class="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="weak_first">不熟練優先</option>
+          <select id="sort-select" onchange="handleSortChange()" class="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="custom">自定義</option>
             <option value="alpha">字母 A-Z</option>
             <option value="time">新增時間</option>
           </select>
@@ -281,25 +283,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 2: 長按動作選單 -->
-  <div id="card-action-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50" onclick="toggleModal('card-action-modal')">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-xs shadow-2xl text-center" onclick="event.stopPropagation()">
-      <h3 id="card-action-word" class="text-base font-black text-slate-800 mb-1">單字操作</h3>
-      <p class="text-xs text-slate-400 mb-4">請選擇你要執行的操作</p>
-      
-      <div class="space-y-2">
-        <button onclick="executeActionEdit()" class="w-full py-3 bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-700 font-bold rounded-2xl text-xs transition">
-          ✏️ 編輯單字內容
-        </button>
-        <button onclick="executeActionDelete()" class="w-full py-3 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-rose-500 font-bold rounded-2xl text-xs transition">
-          🗑️ 刪除單字
-        </button>
-      </div>
-      <button onclick="toggleModal('card-action-modal')" class="mt-3 text-xs text-slate-400 font-bold">取消</button>
-    </div>
-  </div>
-
-  <!-- 彈窗 3: 編輯單個單字 -->
+  <!-- 彈窗 2: 編輯單個單字 -->
   <div id="edit-card-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-4">編輯單字卡</h3>
@@ -342,7 +326,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 4: 單字集/資料夾 選單操作 -->
+  <!-- 彈窗 3: 單字集/資料夾 選單操作 -->
   <div id="deck-menu-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
       <h3 id="deck-menu-title" class="text-base font-black text-slate-800 mb-4">管理單字集</h3>
@@ -361,7 +345,7 @@
 
       <div class="flex justify-between items-center pt-2 border-t">
         <button onclick="deleteCurrentMenuDeck()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-xl text-xs transition">
-          🗑️ 刪除單字集
+          刪除單字集
         </button>
         <div class="flex gap-2">
           <button onclick="toggleModal('deck-menu-modal')" class="px-3 py-2 text-slate-400 text-xs font-bold">取消</button>
@@ -371,7 +355,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 5: 新增資料夾 -->
+  <!-- 彈窗 4: 新增資料夾 -->
   <div id="folder-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">📁 新增資料夾</h3>
@@ -383,7 +367,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 6: 新增單字集 -->
+  <!-- 彈窗 5: 新增單字集 -->
   <div id="deck-modal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold mb-3">新增單字集</h3>
@@ -404,7 +388,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 7: 選擇複習模式 -->
+  <!-- 彈窗 6: 選擇複習模式 -->
   <div id="review-mode-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
       <h3 class="text-lg font-bold text-slate-800 mb-4">選擇複習模式</h3>
@@ -439,7 +423,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 8: 複習結算統計 -->
+  <!-- 彈窗 7: 複習結算統計 -->
   <div id="summary-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl text-center">
       <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">🎉</div>
@@ -486,6 +470,7 @@
           folderId: "f-default",
           name: "核心單字集 1",
           level: 0,
+          reviewCount: 0,
           lastReviewed: null,
           nextReview: new Date().toISOString().split("T")[0],
           cards: [
@@ -511,7 +496,6 @@
     let isCardFlipped = false;
     let matchSelected = null;
     let matchRemaining = 0;
-    let activeActionCardId = null;
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -642,6 +626,7 @@
 
       decks.forEach(deck => {
         const isDue = !deck.nextReview || deck.nextReview <= today;
+        const reviewCount = deck.reviewCount || deck.level || 0;
         const deckCard = document.createElement("div");
         deckCard.className = "bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer flex flex-col justify-between h-36 relative group";
         deckCard.onclick = () => openDeckDetail(deck.id);
@@ -663,7 +648,7 @@
             <p class="text-xs text-slate-400 font-medium">${deck.cards.length} 個單字</p>
           </div>
           <div class="flex justify-between items-center text-[11px] text-slate-400 pt-2 border-t border-slate-100 font-medium">
-            <span>第 ${deck.level + 1} 階段</span>
+            <span>複習 ${reviewCount} 次</span>
             <span class="text-blue-600 font-bold">進入學習 ➔</span>
           </div>
         `;
@@ -747,7 +732,7 @@
     function renderDeckDetailHeader() {
       const deck = appData.decks[currentDeckId];
       document.getElementById("deck-detail-title").innerText = deck.name;
-      document.getElementById("deck-detail-count").innerText = `共 ${deck.cards.length} 個單字 (長按單字可編輯或刪除)`;
+      document.getElementById("deck-detail-count").innerText = `共 ${deck.cards.length} 個單字`;
 
       const fab = document.getElementById("fab-review-btn");
       if (deck.cards.length === 0) {
@@ -765,7 +750,7 @@
         banner.innerHTML = `
           <div>
             <p class="font-bold text-sm">⏰ 今日建議複習</p>
-            <p class="text-xs text-amber-700 mt-0.5">強化第 ${deck.level + 1} 階段記憶痕跡</p>
+            <p class="text-xs text-amber-700 mt-0.5">強化記憶痕跡</p>
           </div>
           <span class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg">待複習</span>
         `;
@@ -868,6 +853,10 @@
       });
     }
 
+    function handleSortChange() {
+      renderCardList();
+    }
+
     function toggleSortOrder() {
       sortAscending = !sortAscending;
       document.getElementById("sort-order-icon").innerText = sortAscending ? "↓" : "↑";
@@ -889,87 +878,146 @@
       emptyState.classList.add("hidden");
 
       let sortedCards = [...deck.cards];
-      if (sortBy === "weak_first") {
-        const weight = { hard: 1, medium: 2, undefined: 3, easy: 4 };
-        sortedCards.sort((a, b) => (weight[a.status] || 3) - (weight[b.status] || 3));
-      } else if (sortBy === "alpha") {
+      if (sortBy === "alpha") {
         sortedCards.sort((a, b) => a.word.localeCompare(b.word));
       } else if (sortBy === "time") {
         sortedCards.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       }
+      // 'custom' 保持原陣列順序
 
-      if (!sortAscending) sortedCards.reverse();
+      if (!sortAscending && sortBy !== "custom") sortedCards.reverse();
 
-      sortedCards.forEach(c => {
-        let statusBadge = "";
-        if (c.status === "hard") statusBadge = `<span class="text-sm font-bold text-rose-500">✕</span>`;
-        if (c.status === "medium") statusBadge = `<span class="text-sm font-bold text-amber-500">△</span>`;
-        if (c.status === "easy") statusBadge = `<span class="text-sm font-bold text-emerald-500">○</span>`;
+      sortedCards.forEach((c, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm";
+        wrapper.dataset.id = c.id;
+        wrapper.dataset.index = index;
 
-        const cardEl = document.createElement("div");
-        cardEl.className = "bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-2xl p-4 flex items-start justify-between gap-3 transition cursor-pointer active:scale-[0.99]";
+        if (sortBy === "custom") {
+          wrapper.draggable = true;
+        }
 
-        cardEl.innerHTML = `
-          <div class="flex-1 pointer-events-none">
-            <div class="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 class="font-black text-slate-800 text-base">${c.word}</h4>
-              <span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded">${c.pos || 'n.'}</span>
-              <span class="text-xs text-slate-400">${c.phonetic || ''}</span>
-              ${statusBadge}
-            </div>
-            <p class="text-sm font-semibold text-slate-700">${c.def}</p>
-            ${c.note ? `<p class="text-xs text-slate-400 mt-1 italic">${c.note}</p>` : ''}
+        wrapper.innerHTML = `
+          <!-- 左滑出的按鈕群 (純文字無 Emoji) -->
+          <div class="absolute inset-y-0 right-0 flex items-stretch">
+            <button onclick="openEditCardModal('${c.id}')" class="px-5 bg-amber-500 text-white text-xs font-bold flex items-center justify-center hover:bg-amber-600 transition">
+              編輯
+            </button>
+            <button onclick="deleteCard('${c.id}')" class="px-5 bg-rose-600 text-white text-xs font-bold flex items-center justify-center hover:bg-rose-700 transition">
+              刪除
+            </button>
           </div>
-          <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-          </button>
+
+          <!-- 卡片內容 (詞性與中文在同一行) -->
+          <div id="swipe-item-${c.id}" class="swipe-content relative bg-slate-50 p-4 flex items-center justify-between gap-3 cursor-grab">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <h4 class="font-black text-slate-800 text-base">${c.word}</h4>
+                <span class="text-xs text-slate-400 font-medium">${c.phonetic || ''}</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded shrink-0">${c.pos || 'n.'}</span>
+                <span>${c.def}</span>
+              </div>
+              ${c.note ? `<p class="text-xs text-slate-400 mt-1 italic">${c.note}</p>` : ''}
+            </div>
+            <button onclick="speakText('${c.word}'); event.stopPropagation();" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition flex items-center justify-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            </button>
+          </div>
         `;
 
-        setupLongPress(cardEl, c.id, c.word);
-        listContainer.appendChild(cardEl);
+        listContainer.appendChild(wrapper);
+        setupCardSwipe(wrapper.querySelector(`#swipe-item-${c.id}`));
+      });
+
+      if (sortBy === "custom") {
+        setupDragAndDrop(listContainer);
+      }
+    }
+
+    // 左滑手勢處理 (向左滑動展開編輯/刪除)
+    function setupCardSwipe(el) {
+      let startX = 0, currentX = 0, isSwiping = false;
+
+      function handleTouchStart(e) {
+        startX = e.touches ? e.touches[0].clientX : e.clientX;
+        isSwiping = true;
+      }
+      function handleTouchMove(e) {
+        if (!isSwiping) return;
+        currentX = e.touches ? e.touches[0].clientX : e.clientX;
+        const diff = currentX - startX;
+        if (diff < 0 && diff > -140) {
+          el.style.transform = `translateX(${diff}px)`;
+        }
+      }
+      function handleTouchEnd() {
+        if (!isSwiping) return;
+        isSwiping = false;
+        const diff = currentX - startX;
+        if (diff < -50) {
+          el.style.transform = "translateX(-130px)";
+        } else {
+          el.style.transform = "translateX(0px)";
+        }
+      }
+
+      el.addEventListener("touchstart", handleTouchStart, { passive: true });
+      el.addEventListener("touchmove", handleTouchMove, { passive: true });
+      el.addEventListener("touchend", handleTouchEnd);
+
+      el.addEventListener("mousedown", handleTouchStart);
+      window.addEventListener("mousemove", (e) => { if(isSwiping) handleTouchMove(e); });
+      window.addEventListener("mouseup", handleTouchEnd);
+    }
+
+    // 自定義長按拖曳排序功能 (Drag & Drop)
+    function setupDragAndDrop(container) {
+      let draggedItem = null;
+
+      container.querySelectorAll(".swipe-content").forEach(item => {
+        const wrapper = item.parentElement;
+
+        wrapper.addEventListener("dragstart", (e) => {
+          draggedItem = wrapper;
+          setTimeout(() => wrapper.classList.add("dragging"), 0);
+        });
+
+        wrapper.addEventListener("dragend", () => {
+          wrapper.classList.remove("dragging");
+          draggedItem = null;
+          // 重新抓取目前順序並儲存
+          const currentIds = Array.from(container.children).map(child => child.dataset.id);
+          const deck = appData.decks[currentDeckId];
+          deck.cards.sort((a, b) => currentIds.indexOf(a.id) - currentIds.indexOf(b.id));
+          saveData();
+          renderInlineLearnCard();
+        });
+
+        wrapper.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const afterElement = getDragAfterElement(container, e.clientY);
+          if (afterElement == null) {
+            container.appendChild(draggedItem);
+          } else {
+            container.insertBefore(draggedItem, afterElement);
+          }
+        });
       });
     }
 
-    function setupLongPress(el, cardId, word) {
-      let timer = null;
-      let isLongPress = false;
-
-      function start(e) {
-        isLongPress = false;
-        timer = setTimeout(() => {
-          isLongPress = true;
-          if (navigator.vibrate) navigator.vibrate(40);
-          openCardActionModal(cardId, word);
-        }, 500);
-      }
-
-      function cancel() {
-        if (timer) clearTimeout(timer);
-      }
-
-      el.addEventListener("touchstart", start, { passive: true });
-      el.addEventListener("touchend", cancel);
-      el.addEventListener("touchmove", cancel);
-
-      el.addEventListener("mousedown", start);
-      el.addEventListener("mouseup", cancel);
-      el.addEventListener("mouseleave", cancel);
-    }
-
-    function openCardActionModal(cardId, word) {
-      activeActionCardId = cardId;
-      document.getElementById("card-action-word").innerText = word;
-      toggleModal("card-action-modal");
-    }
-
-    function executeActionEdit() {
-      toggleModal("card-action-modal");
-      openEditCardModal(activeActionCardId);
-    }
-
-    function executeActionDelete() {
-      toggleModal("card-action-modal");
-      deleteCard(activeActionCardId);
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
     // ================= 單字編輯與刪除 =================
@@ -1128,11 +1176,13 @@
       session.mode = mode;
       let reviewCards = [...deck.cards];
       const sortBy = document.getElementById("sort-select").value;
-      if (sortBy === "weak_first") {
-        const weight = { hard: 1, medium: 2, undefined: 3, easy: 4 };
-        reviewCards.sort((a, b) => (weight[a.status] || 3) - (weight[b.status] || 3));
+      if (sortBy === "alpha") {
+        reviewCards.sort((a, b) => a.word.localeCompare(b.word));
+      } else if (sortBy === "time") {
+        reviewCards.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       }
-      if (!sortAscending) reviewCards.reverse();
+
+      if (!sortAscending && sortBy !== "custom") reviewCards.reverse();
 
       session.queue = reviewCards.map(c => ({ card: c }));
       session.stats = { totalAnswered: 0, easy: 0, medium: 0, hard: 0, masteredWords: new Set() };
@@ -1424,11 +1474,13 @@
       if (session.stats.masteredWords.size > 0) {
         const deck = appData.decks[currentDeckId];
         const today = new Date();
-        const intervalDays = SRS_INTERVALS[Math.min(deck.level, SRS_INTERVALS.length - 1)];
+        const currentCount = deck.reviewCount || deck.level || 0;
+        const intervalDays = SRS_INTERVALS[Math.min(currentCount, SRS_INTERVALS.length - 1)];
         const nextDate = new Date();
         nextDate.setDate(today.getDate() + intervalDays);
 
-        deck.level += 1;
+        deck.reviewCount = currentCount + 1;
+        deck.level = deck.reviewCount;
         deck.lastReviewed = today.toISOString().split("T")[0];
         deck.nextReview = nextDate.toISOString().split("T")[0];
         saveData();
@@ -1489,6 +1541,7 @@
         folderId,
         name,
         level: 0,
+        reviewCount: 0,
         lastReviewed: null,
         nextReview: new Date().toISOString().split("T")[0],
         cards: []
