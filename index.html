@@ -42,7 +42,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4 mb-6">
         <div>
           <h1 class="text-2xl font-black text-slate-800 flex items-center gap-2">
-            <span>背單字📚</span>
+            <span>📚 我的學習庫</span>
           </h1>
           <p class="text-xs text-slate-400 mt-0.5">點擊單字集進入學習與複習</p>
         </div>
@@ -82,6 +82,7 @@
         </div>
       </div>
 
+      <!-- 狀態橫幅 -->
       <div id="deck-status-banner" class="mb-5 p-3.5 rounded-2xl transition"></div>
 
       <!-- 嵌入式學習單字卡區塊 -->
@@ -247,7 +248,6 @@
               <p id="review-answer-sub" class="text-base font-medium text-slate-300 mb-1"></p>
               <p id="review-answer-note" class="text-xs text-slate-400 italic px-4"></p>
               
-              <!-- 純喇叭發音按鈕 -->
               <button onclick="speakAnswerWord()" class="mt-2.5 p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-blue-300 transition flex items-center justify-center mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
               </button>
@@ -630,7 +630,6 @@
               <h3 class="font-black text-slate-800 text-lg">${folder.name}</h3>
               <span class="text-xs bg-slate-200 text-slate-600 font-bold px-2.5 py-0.5 rounded-full">${folderDecks.length} 個單字集</span>
             </div>
-            <!-- 修正：點擊後立即觸發 blur() 確保恢復灰色 -->
             <button onclick="deleteFolder('${folder.id}'); this.blur();" onmouseleave="this.blur()" ontouchend="this.blur()" title="刪除資料夾" class="text-slate-400 active:text-rose-600 focus:outline-none p-1.5 rounded-lg active:bg-rose-50 transition flex items-center justify-center">
               <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
                 <path d="M9 3h6v2H9V3zm-4 3h14v2H5V6zm2 3h10v12H7V9zm2 2v8h2v-8H9zm4 0v8h2v-8h-2z"/>
@@ -1678,6 +1677,7 @@
       toggleModal("summary-modal");
     }
 
+    // ================= 當日防重複累加判定 =================
     function finishReviewSession() {
       toggleModal("summary-modal");
       document.getElementById("view-review").classList.add("hidden");
@@ -1685,16 +1685,28 @@
 
       if (session.stats.masteredWords.size > 0) {
         const deck = appData.decks[currentDeckId];
-        const today = new Date();
-        const currentCount = deck.reviewCount || deck.level || 0;
-        const intervalDays = SRS_INTERVALS[Math.min(currentCount, SRS_INTERVALS.length - 1)];
-        const nextDate = new Date();
-        nextDate.setDate(today.getDate() + intervalDays);
+        const todayStr = new Date().toISOString().split("T")[0];
 
-        deck.reviewCount = currentCount + 1;
-        deck.level = deck.reviewCount;
-        deck.lastReviewed = today.toISOString().split("T")[0];
-        deck.nextReview = nextDate.toISOString().split("T")[0];
+        // 檢查今天是否已經完成過複習
+        const alreadyReviewedToday = (deck.lastReviewed === todayStr);
+
+        if (!alreadyReviewedToday) {
+          // 今天第一次完成複習：階段數 +1，並根據遺忘曲線推算下次複習日
+          const currentCount = deck.reviewCount || 0;
+          const intervalDays = SRS_INTERVALS[Math.min(currentCount, SRS_INTERVALS.length - 1)];
+          
+          const nextDate = new Date();
+          nextDate.setDate(nextDate.getDate() + intervalDays);
+
+          deck.reviewCount = currentCount + 1;
+          deck.level = deck.reviewCount;
+          deck.lastReviewed = todayStr;
+          deck.nextReview = nextDate.toISOString().split("T")[0];
+        } else {
+          // 同一天重複複習：只記錄最後複習時間，不累加階段、不推遲下次複習日
+          deck.lastReviewed = todayStr;
+        }
+
         saveData();
       }
 
